@@ -158,7 +158,7 @@ class CycleGAN:
             d_loss = [0, 0]
 #            random.shuffle(self.data_loader)
             for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.data_load()):
-
+                print('check', imgs_A.shape)
                 fake_B = self.genAB.predict(imgs_A)
                 fake_A = self.genBA.predict(imgs_B)
 

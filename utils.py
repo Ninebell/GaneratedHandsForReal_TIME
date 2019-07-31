@@ -8,7 +8,6 @@ import numpy as np
 def load_data(dataset_path, test_rate=0.2):
     image_path = glob(os.path.join(dataset_path, 'image', '*.png'))
     label_path = glob(os.path.join(dataset_path, 'label', '*.png'))
-
     if len(image_path) == 0:
         raise Exception('[!] Failed to load dataset')
     if len(image_path) != len(label_path):
@@ -37,12 +36,13 @@ def load_data(dataset_path, test_rate=0.2):
     test_label = []
 
     for idx in range(len(test_image_path)):
-        train_image.append(np.asarray(Image.open(train_image_path[idx])))
-        train_label.append(np.asarray(Image.open(train_label_path[idx])))
+
+        train_image.append(np.asarray(Image.open(train_image_path[idx]).convert('L')))
+        train_label.append(np.asarray(Image.open(train_label_path[idx]).convert('L')))
 
     for idx in range(len(test_image_path)):
-        test_image.append(np.asarray(Image.open(test_image_path[idx])))
-        test_label.append(np.asarray(Image.open(test_label_path[idx])))
+        test_image.append(np.asarray(Image.open(test_image_path[idx]).convert('L')))
+        test_label.append(np.asarray(Image.open(test_label_path[idx]).convert('L')))
 
     train_image = np.asarray(train_image, dtype=np.float32)
     train_label = np.asarray(train_label, dtype=np.float32)
@@ -50,4 +50,20 @@ def load_data(dataset_path, test_rate=0.2):
     test_image = np.asarray(test_image, dtype=np.float32)
     test_label = np.asarray(test_label, dtype=np.float32)
 
-    return [(train_image, train_label), (test_image, test_label)]
+    train_image /= 255
+    train_label /= 255
+
+    test_image /= 255
+    test_label /= 255
+
+
+    return [(train_image,train_label),(test_image,test_label)]
+
+def save_result(save_path,results,flag_multi_class = False,num_class = 2):
+    for idx in range(results):
+        img = Image.fromarray(results[idx])
+        file_path = save_path+'/%d.png' % (idx+1)
+        img.save(file_path)
+
+
+
