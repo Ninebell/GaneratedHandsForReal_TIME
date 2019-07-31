@@ -160,15 +160,19 @@ class SilNet:
         n = normalize_layer()(c1)
         c1 = Conv2D(filters=filters, kernel_size=3, padding='same',strides=1, activation='relu')(n)
         n = normalize_layer()(c1)
-        max_pool = MaxPooling2D()(n)
+        c1_d = Conv2D(filters=filters, kernel_size=3, padding='same',strides=2, activation='relu')(n)
+        n = normalize_layer()(c1_d)
+#        max_pool = MaxPooling2D()(n)
 
-        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(max_pool)
+        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(n)
         n = normalize_layer()(c2)
         c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(n)
         n = normalize_layer()(c2)
-        max_pool = MaxPooling2D()(n)
+        c2_d = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=2, activation='relu')(n)
+        n = normalize_layer()(c2_d)
+#        max_pool = MaxPooling2D()(n)
 
-        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(max_pool)
+        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(n)
         n = normalize_layer()(c3)
         c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(n)
 

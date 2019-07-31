@@ -1,6 +1,6 @@
+./unet/data/membrane/train\label\11.png
 ./unet/data/membrane/train\label\10.png
-./unet/data/membrane/train\label\24.png
-./unet/data/membrane/train\label\28.png
-./unet/data/membrane/train\label\13.png
-./unet/data/membrane/train\label\2.png
-./unet/data/membrane/train\label\6.png
+./unet/data/membrane/train\label\17.png
+./unet/data/membrane/train\label\18.png
+./unet/data/membrane/train\label\3.png
+./unet/data/membrane/train\label\21.png
