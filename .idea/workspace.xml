@@ -1,0 +1,798 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="174d4f56-eaa2-4510-b298-2c0fa5219cf5" name="Default Changelist" comment="kkj">
+      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane.zip" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/unet_membrane.hdf5" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/0_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/0_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/10_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/10_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/11_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/11_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/12_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/12_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/13_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/13_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/14_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/14_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/15_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/15_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/16_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/16_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/17_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/17_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/18_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/18_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/19_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/19_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/1_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/1_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/20_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/20_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/21_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/21_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/22_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/22_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/23_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/23_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/24_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/24_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/25_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/25_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/26_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/26_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/27_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/27_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/28_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/28_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/29_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/29_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/2_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/2_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/3_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/3_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/4_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/4_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/5_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/5_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/6_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/6_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/7_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/7_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/8_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/8_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/9_predict.png" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test/9_predict.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/model.py" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="509">
+              <caret line="147" column="59" selection-start-line="147" selection-start-column="59" selection-end-line="147" selection-end-column="59" />
+              <folding>
+                <element signature="e#113#123#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1174">
+              <caret line="94" selection-start-line="94" selection-end-line="94" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/training.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="291">
+              <caret line="1417" selection-start-line="1417" selection-end-line="1417" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/legacy/interfaces.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="331">
+              <caret line="90" selection-start-line="90" selection-end-line="90" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="399">
+              <caret line="21" column="40" lean-forward="true" selection-start-line="21" selection-start-column="40" selection-end-line="21" selection-end-column="40" />
+              <folding>
+                <element signature="e#0#41#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras_preprocessing/image/iterator.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="291">
+              <caret line="84" selection-start-line="84" selection-end-line="84" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/multiprocessing/pool.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="283">
+              <caret line="643" selection-start-line="643" selection-end-line="643" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/utils/data_utils.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="291">
+              <caret line="684" selection-start-line="684" selection-end-line="684" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/dataPrepare.ipynb">
+          <provider selected="true" editor-type-id="ipnb-editor">
+            <state>
+              <selected id="0" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-289">
+              <caret line="66" column="20" selection-start-line="66" selection-start-column="20" selection-end-line="66" selection-end-column="20" />
+              <folding>
+                <element signature="e#0#37#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <replaceStrings>
+      <replace />
+    </replaceStrings>
+    <dirStrings>
+      <dir>C:\Users\Jonghoe\PycharmProjects\GaneratedHandsForReal\CycleGAN</dir>
+    </dirStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/GeoConGAN/SilNet/unet" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/README.md" />
+        <option value="$PROJECT_DIR$/SilNet/u-net/data.py" />
+        <option value="$PROJECT_DIR$/SilNet/unet/model.py" />
+        <option value="$PROJECT_DIR$/util.py" />
+        <option value="$PROJECT_DIR$/utils.py" />
+        <option value="$PROJECT_DIR$/SilNet/unet/data.py" />
+        <option value="$PROJECT_DIR$/SilNet/unet/main.py" />
+        <option value="$PROJECT_DIR$/test/CycleGAN/model.py" />
+        <option value="$PROJECT_DIR$/test/CycleGAN/main.py" />
+        <option value="$PROJECT_DIR$/test2/CycleGAN/__init__.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/CycleGAN/util/util.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/CycleGAN/util/__init__.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/CycleGAN/util/utility.py" />
+        <option value="$PROJECT_DIR$/SilNet/silnet.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" />
+        <option value="$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-8" />
+    <option name="y" value="-8" />
+    <option name="width" value="916" />
+    <option name="height" value="1616" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+              <item name="GeoConGAN" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+              <item name="GeoConGAN" type="462c0819:PsiDirectoryNode" />
+              <item name="CycleGAN" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+              <item name="GeoConGAN" type="462c0819:PsiDirectoryNode" />
+              <item name="CycleGAN" type="462c0819:PsiDirectoryNode" />
+              <item name="util" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+              <item name="GeoConGAN" type="462c0819:PsiDirectoryNode" />
+              <item name="SilNet" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GaneratedHandsForReal" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GaneratedHandsForReal" type="462c0819:PsiDirectoryNode" />
+              <item name="GeoConGAN" type="462c0819:PsiDirectoryNode" />
+              <item name="SilNet" type="462c0819:PsiDirectoryNode" />
+              <item name="unet" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Jonghoe\PycharmProjects\GaneratedHandsForReal\GeoConGAN" />
+      <recent name="C:\Users\Jonghoe\PycharmProjects\GaneratedHandsForReal\test2" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.main">
+    <configuration name="data" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="GaneratedHandsForReal" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GeoConGAN/SilNet/unet" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="GaneratedHandsForReal" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GeoConGAN/SilNet/unet" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="model (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="GaneratedHandsForReal" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GeoConGAN/CycleGAN" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="silnet" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="GaneratedHandsForReal" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GeoConGAN/SilNet" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="utility" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="GaneratedHandsForReal" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GeoConGAN/CycleGAN/util" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GeoConGAN/CycleGAN/util/utility.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.data" />
+        <item itemvalue="Python.silnet" />
+        <item itemvalue="Python.model (1)" />
+        <item itemvalue="Python.utility" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="174d4f56-eaa2-4510-b298-2c0fa5219cf5" name="Default Changelist" comment="" />
+      <created>1551852427926</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1551852427926</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="54" y="-8" width="3394" height="1456" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1227652" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3184569" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.39832446" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.3282559" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.3290469" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.17517136" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="10" weight="0.32901752" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/GaneratedHandsForReal_TIME" />
+      <path value="$PROJECT_DIR$/SilNet/u-net" />
+      <path value="$PROJECT_DIR$/SilNet/unet" />
+    </ignored-roots>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/util/utility.py</url>
+          <line>66</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/util/utility.py</url>
+          <line>50</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py</url>
+          <line>24</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py</url>
+          <line>200</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py</url>
+          <line>65</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py</url>
+          <line>135</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/mask_0_9312159.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_4_9292489.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="36288">
+          <caret line="1134" selection-start-line="1134" selection-end-line="1134" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/CycleGAN/main.py" />
+    <entry file="file://$PROJECT_DIR$/test/CycleGAN/model.py" />
+    <entry file="file://$PROJECT_DIR$/test/CycleGAN/layers.py" />
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/codecs.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="246">
+          <caret line="310" selection-start-line="310" selection-end-line="310" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/losses.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-8">
+          <caret line="24" column="38" selection-start-line="24" selection-start-column="38" selection-end-line="24" selection-end-column="38" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/numpy/core/numeric.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-8">
+          <caret line="537" selection-start-line="537" selection-end-line="537" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test2/CycleGAN/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-480">
+          <caret line="65" column="60" selection-start-line="65" selection-start-column="60" selection-end-line="65" selection-end-column="60" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/base_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="279">
+          <caret line="430" selection-start-line="430" selection-end-line="430" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test2/CycleGAN/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/network.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="331">
+          <caret line="92" selection-start-line="92" selection-end-line="92" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/tensorflow/python/client/session.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="339">
+          <caret line="1438" selection-start-line="1438" selection-end-line="1438" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/training_arrays.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="339">
+          <caret line="293" selection-start-line="293" selection-end-line="293" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/layers/convolutional.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5659">
+          <caret line="489" selection-start-line="489" selection-end-line="489" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/numpy/core/_methods.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="437">
+          <caret line="31" selection-start-line="31" selection-end-line="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd_plugins/extensions/types/pydevd_plugin_numpy_types.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="346">
+          <caret line="68" selection-start-line="68" selection-end-line="68" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydevd_bundle/pydevd_vars.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="254">
+          <caret line="247" selection-start-line="247" selection-end-line="247" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/CycleGAN/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/tensorflow/python/framework/errors_impl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="48">
+          <caret line="489" lean-forward="true" selection-start-line="489" selection-end-line="489" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="665">
+          <caret line="39" column="76" selection-start-line="39" selection-start-column="76" selection-end-line="39" selection-end-column="76" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../problem_recognize/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="380">
+          <caret line="22" column="26" selection-start-line="22" selection-start-column="26" selection-end-line="22" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/CycleGAN/util/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="20" selection-start-column="20" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/CycleGAN/check model.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_3_6123244.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_2_4218729.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_1_9353417.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_1_9323655.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_0_9312159.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/mask_0_6144147.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train/aug/image_0_6144147.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/CycleGAN/util/utility.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="551">
+          <caret line="49" selection-start-line="49" selection-end-line="49" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/trainUnet.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor />
+          <second_editor />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/training_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="230">
+          <caret line="127" selection-start-line="127" selection-end-line="127" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/PIL/Image.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="420">
+          <caret line="2544" selection-start-line="2544" selection-end-line="2544" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/layers/merge.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="62">
+          <caret line="637" column="4" selection-start-line="637" selection-start-column="4" selection-end-line="637" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="18" column="23" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/training_generator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="291">
+          <caret line="85" selection-start-line="85" selection-end-line="85" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/engine/training.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="291">
+          <caret line="1417" selection-start-line="1417" selection-end-line="1417" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/legacy/interfaces.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="331">
+          <caret line="90" selection-start-line="90" selection-end-line="90" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="509">
+          <caret line="147" column="59" selection-start-line="147" selection-start-column="59" selection-end-line="147" selection-end-column="59" />
+          <folding>
+            <element signature="e#113#123#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1174">
+          <caret line="94" selection-start-line="94" selection-end-line="94" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/dataPrepare.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/multiprocessing/pool.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="283">
+          <caret line="643" selection-start-line="643" selection-end-line="643" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras/utils/data_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="291">
+          <caret line="684" selection-start-line="684" selection-end-line="684" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/envs/math_expression/Lib/site-packages/keras_preprocessing/image/iterator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="291">
+          <caret line="84" selection-start-line="84" selection-end-line="84" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-289">
+          <caret line="66" column="20" selection-start-line="66" selection-start-column="20" selection-end-line="66" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GeoConGAN/SilNet/unet/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="399">
+          <caret line="21" column="40" lean-forward="true" selection-start-line="21" selection-start-column="40" selection-end-line="21" selection-end-column="40" />
+          <folding>
+            <element signature="e#0#41#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>
