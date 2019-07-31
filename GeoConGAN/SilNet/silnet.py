@@ -50,14 +50,14 @@ class DataLoader:
 
         self.n_batch = int(min(len(path_a)//self.batch_size, len(path_b)//self.batch_size))
 
-        idx = np.random.choice(self.n_batch*self.batch_size, self.n_batch*self.batch_size, replace=False)
+        #idx = np.random.choice(self.n_batch*self.batch_size, self.n_batch*self.batch_size, replace=False)
 
         for n in range(self.n_batch):
             imgs_A = []
             imgs_B = []
             for i in range(self.batch_size):
-                img_A = imread(os.path.join(root_a, path_a[idx[n*self.batch_size + i]]))
-                img_B = imread(os.path.join(root_b, path_b[idx[n*self.batch_size + i]]))
+                img_A = imread(os.path.join(root_a, path_a[n*self.batch_size + i]))
+                img_B = imread(os.path.join(root_b, path_b[n*self.batch_size + i]))
 
                 imgs_A.append(img_A)
                 imgs_B.append(img_B)
@@ -81,7 +81,7 @@ class SilNet:
 
     def __init__(self, shape, train_generator, data_loader, batch_size):
         self.shape = shape
-        self.model = self.make_model()
+        self.model = self.make_model2()
         self.compile_model()
         self.train_generator = train_generator
         self.test_generator = data_loader
@@ -126,10 +126,8 @@ class SilNet:
         a = ReLU()(conv_layer_3)
         n = normalization()(a)
         conv_layer_4 = Conv2D(filters=filter_size*2, kernel_size=3, strides=2, padding='same')(n)
-        a = ReLU()(conv_layer_4)
-        n = normalization()(a)
 
-        res_net = resnet(n, filter_size*2)
+        res_net = resnet(conv_layer_4, filter_size*2)
         for i in range(0, 5):
             res_net = resnet(res_net, filter_size*2)
 
@@ -149,9 +147,47 @@ class SilNet:
 ##                loss = self.model.train_on_batch(input_image, label)
             loss = self.model.fit_generator(self.train_generator, steps_per_epoch=300, epochs=5)
 
-
             print(loss)
             self.test_save(epoch_idx)
+
+    def make_model2(self):
+        def normalize_layer():
+            return BatchNormalization()
+
+        filters = 64
+        input_layer  = Input(self.shape)
+        c1 = Conv2D(filters=filters, kernel_size=3, padding='same',strides=1, activation='relu')(input_layer)
+        n = normalize_layer()(c1)
+        c1 = Conv2D(filters=filters, kernel_size=3, padding='same',strides=1, activation='relu')(n)
+        n = normalize_layer()(c1)
+        max_pool = MaxPooling2D()(n)
+
+        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(max_pool)
+        n = normalize_layer()(c2)
+        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(n)
+        n = normalize_layer()(c2)
+        max_pool = MaxPooling2D()(n)
+
+        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(max_pool)
+        n = normalize_layer()(c3)
+        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+
+        up_sample = concatenate([Conv2DTranspose(filters=filters*2, kernel_size=2,strides=2,padding='same')(c3), c2],axis=3)
+
+        c4 = Conv2D(filters=filters*2, kernel_size=3, padding='same', strides=1, activation='relu')(up_sample)
+        n = normalize_layer()(c4)
+        c4 = Conv2D(filters=filters*2, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+
+        up_sample = concatenate([Conv2DTranspose(filters=filters, kernel_size=2,strides=2,padding='same')(c4), c1],axis=3)
+
+
+        c5 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1, activation='relu')(up_sample)
+        n = normalize_layer()(c5)
+        c5 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+
+        output = Conv2D(filters=1, kernel_size=1, padding='same',strides=1, activation='tanh')(c5)
+
+        return Model(inputs=input_layer, outputs=output)
 
     def test_save(self, epoch_idx):
         os.makedirs(result_path+"/{0}".format(epoch_idx), exist_ok=True)
@@ -196,4 +232,4 @@ if __name__ == "__main__":
     silnet = SilNet((256,256,1), myGene, data_loader, 4)
     silnet.model.summary()
     silnet.train_on_batch(500)
-
+    Conv2DTranspose()
