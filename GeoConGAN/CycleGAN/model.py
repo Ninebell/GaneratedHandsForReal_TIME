@@ -11,7 +11,7 @@ from keras.models import Model
 from GeoConGAN.CycleGAN.util.utility import *
 
 horse2zebra = "../Data/horse2zebra"
-result_path = "../Data/horse2zebra_result"
+result_path = "D:\\horse2zebra_result"
 
 
 class CycleGAN:
@@ -27,7 +27,7 @@ class CycleGAN:
         self.__build__()
         self.combined.summary()
         self.genBA.summary()
-        keras.utils.plot_model(self.combined,'check model.png',show_shapes=True)
+#        keras.utils.plot_model(self.combined,'check model.png',show_shapes=True)
 
     def __build__(self):
 
@@ -35,11 +35,11 @@ class CycleGAN:
         inputA = Input(self.shape, name='InputA')
         inputB = Input(self.shape, name='InputB')
 
-        self.genAB = self.generator('genAB')
-        self.genBA = self.generator('genBA')
+        self.genAB = CycleGAN.generator(self.shape, 'genAB')
+        self.genBA = CycleGAN.generator(self.shape, 'genBA')
 
-        self.discA = self.discriminator('discA')
-        self.discB = self.discriminator('discB')
+        self.discA = CycleGAN.discriminator(self.shape, 'discA')
+        self.discB = CycleGAN.discriminator(self.shape, 'discB')
 
         self.discA.compile(optimizer=optimizer, loss='mse', metrics=['accuracy'])
         self.discB.compile(optimizer=optimizer, loss='mse', metrics=['accuracy'])
@@ -71,8 +71,8 @@ class CycleGAN:
                                             self.lambda_id,self.lambda_id],
                               optimizer=optimizer)
 
-
-    def discriminator(self, name='discriminator'):
+    @staticmethod
+    def discriminator(shape, name='discriminator'):
         d_filter = 32
         def normalization_layer():
             return InstanceNormalization()
@@ -86,7 +86,7 @@ class CycleGAN:
             else:
                 return relu
 
-        input_layer = Input(shape=self.shape)
+        input_layer = Input(shape=shape)
         c64 = conv2d(filter=d_filter, kernel=4, stride=2, input=input_layer, normal=False)
         c128 = conv2d(filter=d_filter*2, kernel=4, stride=2, input=c64)
         c256 = conv2d(filter=d_filter*4, kernel=4, stride=2, input=c128)
@@ -95,7 +95,8 @@ class CycleGAN:
 
         return Model(inputs=input_layer, outputs=output_layer, name=name)
 
-    def generator(self, name='generator'):
+    @staticmethod
+    def generator(shape, name='generator'):
         g_filter = 32
         def normalization_layer():
             return InstanceNormalization()
@@ -131,7 +132,7 @@ class CycleGAN:
         
         256 x 256: c7s1-64, d128, d256, r256 x 9, u128, u64, c7s1-3
         '''
-        input_layer = Input(self.shape)
+        input_layer = Input(shape)
 
         c7s1_64 = conv2d(filter=g_filter, stride=1, kernel=7, input=input_layer)
         d128 = conv2d(filter=g_filter * 2, stride=2, kernel=3, input=c7s1_64)
@@ -156,9 +157,8 @@ class CycleGAN:
 
         for epoch in range(epochs):
             d_loss = [0, 0]
-#            random.shuffle(self.data_loader)
+#           random.shuffle(self.data_loader)
             for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.data_load()):
-                print('check', imgs_A.shape)
                 fake_B = self.genAB.predict(imgs_A)
                 fake_A = self.genBA.predict(imgs_B)
 
@@ -166,7 +166,6 @@ class CycleGAN:
                                                       [valid, valid,
                                                        imgs_A, imgs_B,
                                                        imgs_A, imgs_B])
-
 
                 dA_loss_real = self.discA.train_on_batch(imgs_A, valid)
                 dA_loss_fake = self.discA.train_on_batch(fake_A, fake)
@@ -197,7 +196,10 @@ class CycleGAN:
 
     def test_save(self, batch_i):
         os.makedirs(result_path+"/{0}".format(batch_i), exist_ok=True)
-
+        self.discA.save_weights(result_path+"/{0}/discA.h5".format(batch_i))
+        self.discB.save_weights(result_path+"/{0}/discB.h5".format(batch_i))
+        self.genAB.save_weights(result_path+"/{0}/genAB.h5".format(batch_i))
+        self.genBA.save_weights(result_path+"/{0}/genBA.h5".format(batch_i))
         for i, (imgs_A, imgs_B) in enumerate(self.data_loader.data_load(False)):
             fake_b = self.genAB.predict(imgs_A)
             fake_a = self.genBA.predict(imgs_B)

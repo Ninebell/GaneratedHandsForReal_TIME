@@ -1,0 +1,5 @@
+tensorflow-gpu
+opencv
+keras
+git+https://www.github.com/keras-team/keras-contrib.git
+pillow

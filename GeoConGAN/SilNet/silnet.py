@@ -2,17 +2,17 @@
 # It used three 2-strided convolutions and three deconvolutions.
 import cv2
 import os
+from GeoConGAN.ImagePreprocess import HandImageGenerator
 from keras.optimizers import Adam
 from keras.layers import *
 from keras.models import Model
+from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
 
 from GeoConGAN.SilNet.unet.data import *
 
 from PIL import Image
 
-
-result_path = "./unet/data/result"
-
+result_path = "d:/GeoConGAN/result"
 
 class DataLoader:
     def __init__(self, batch_size, paths):
@@ -70,7 +70,7 @@ class DataLoader:
 
 def imread(path):
     image = np.array(Image.open(path))
-    if image.shape[0] == 512:
+    if image.shape[0] != 256:
         image.resize((256,256,1))
 
     image = image.reshape((256,256,1))
@@ -79,147 +79,106 @@ def imread(path):
 
 class SilNet:
 
-    def __init__(self, shape, train_generator, data_loader, batch_size):
+    def __init__(self, shape, train_generator, batch_size):
         self.shape = shape
-        self.model = self.make_model2()
+        self.model = self.make_model()
         self.compile_model()
         self.train_generator = train_generator
-        self.test_generator = data_loader
         self.batch_size = batch_size
 
     def make_model(self):
-        def normalization():
-            return BatchNormalization()
-        def conv(input_layer, filter):
-            c = Conv2D(filters=filter, kernel_size=3, strides=1, padding='same')(input_layer)
-            a = ReLU()(c)
-            n = normalization()(a)
-            c = Conv2D(filters=filter, kernel_size=3, strides=2, padding='same')(n)
-            return c
-        def resnet(input_layer, filter):
-            n = normalization()(input_layer)
-            a = ReLU()(n)
-            c = Conv2D(filters=filter, kernel_size=5, strides=1, padding='same')(a)
-            n = normalization()(c)
-            a = ReLU()(n)
-            c = Conv2D(filters=filter, kernel_size=5, strides=1, padding='same')(a)
-            return Add()([input_layer, c])
-
-        def deconv2d(input_layer, filter, concat):
-            upsample = UpSampling2D(size=2)(input_layer)
-            merge = concatenate([upsample,concat],axis=3)
-            conv2d_layer = Conv2D(filters=filter, kernel_size=3, strides=1, padding='same')(merge)
-            n = normalization()(conv2d_layer)
-            return n
-        filter_size = 64
-        input_layer = Input(self.shape)
-
-
-        conv_layer_1 = Conv2D(filters=filter_size, kernel_size=3, strides=1, padding='same')(input_layer)
-        a = ReLU()(conv_layer_1)
-        n = normalization()(a)
-        conv_layer_2 = Conv2D(filters=filter_size, kernel_size=3, strides=2, padding='same')(n)
-        a = ReLU()(conv_layer_2)
-        n = normalization()(a)
-
-        conv_layer_3 = Conv2D(filters=filter_size*2, kernel_size=3, strides=1, padding='same')(n)
-        a = ReLU()(conv_layer_3)
-        n = normalization()(a)
-        conv_layer_4 = Conv2D(filters=filter_size*2, kernel_size=3, strides=2, padding='same')(n)
-
-        res_net = resnet(conv_layer_4, filter_size*2)
-        for i in range(0, 5):
-            res_net = resnet(res_net, filter_size*2)
-
-        deconv_1 = deconv2d(res_net, filter_size*2, conv_layer_3)
-        deconv_2 = deconv2d(deconv_1, filter_size, conv_layer_1)
-
-        output_layer = Conv2D(filters=1, kernel_size=1, strides=1, padding='same', activation='tanh')(deconv_2)
-
-        return Model(inputs=input_layer, outputs=output_layer)
-
-    def compile_model(self):
-        self.model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
-
-    def train_on_batch(self, epoch):
-        for epoch_idx in range(0, epoch):
-##            for idx, (input_image, label) in enumerate(self.data_loader.data_load()):
-##                loss = self.model.train_on_batch(input_image, label)
-            loss = self.model.fit_generator(self.train_generator, steps_per_epoch=300, epochs=5)
-
-            print(loss)
-            self.test_save(epoch_idx)
-
-    def make_model2(self):
         def normalize_layer():
-            return BatchNormalization()
+            return InstanceNormalization()
 
         filters = 64
-        input_layer  = Input(self.shape)
-        c1 = Conv2D(filters=filters, kernel_size=3, padding='same',strides=1, activation='relu')(input_layer)
-        n = normalize_layer()(c1)
-        c1 = Conv2D(filters=filters, kernel_size=3, padding='same',strides=1, activation='relu')(n)
-        n = normalize_layer()(c1)
-        c1_d = Conv2D(filters=filters, kernel_size=3, padding='same',strides=2, activation='relu')(n)
-        n = normalize_layer()(c1_d)
-#        max_pool = MaxPooling2D()(n)
+        input_layer = Input(self.shape)
+        c1 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1)(input_layer)
+        lr = LeakyReLU()(c1)
+        n = normalize_layer()(lr)
+        c1 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c1)
+        n = normalize_layer()(lr)
+        max_pool = MaxPooling2D()(n)
 
-        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(n)
-        n = normalize_layer()(c2)
-        c2 = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=1, activation='relu')(n)
-        n = normalize_layer()(c2)
-        c2_d = Conv2D(filters=filters*2, kernel_size=3, padding='same',strides=2, activation='relu')(n)
-        n = normalize_layer()(c2_d)
-#        max_pool = MaxPooling2D()(n)
+        c2 = Conv2D(filters=filters * 2, kernel_size=3, padding='same', strides=1)(max_pool)
+        lr = LeakyReLU()(c2)
+        n = normalize_layer()(lr)
+        c2 = Conv2D(filters=filters * 2, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c2)
+        n = normalize_layer()(lr)
+        max_pool = MaxPooling2D()(n)
 
-        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(n)
-        n = normalize_layer()(c3)
-        c3 = Conv2D(filters=filters*4, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+        c3 = Conv2D(filters=filters * 4, kernel_size=3, padding='same', strides=1)(max_pool)
+        lr = LeakyReLU()(c3)
+        n = normalize_layer()(lr)
+        c3 = Conv2D(filters=filters * 4, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c3)
+        n = normalize_layer()(lr)
 
-        up_sample = concatenate([Conv2DTranspose(filters=filters*2, kernel_size=2,strides=2,padding='same')(c3), c2],axis=3)
+        max_pool = MaxPooling2D()(n)
 
-        c4 = Conv2D(filters=filters*2, kernel_size=3, padding='same', strides=1, activation='relu')(up_sample)
-        n = normalize_layer()(c4)
-        c4 = Conv2D(filters=filters*2, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+        c4 = Conv2D(filters=filters * 8, kernel_size=3, padding='same', strides=1)(max_pool)
+        lr = LeakyReLU()(c4)
+        n = normalize_layer()(lr)
+        c4 = Conv2D(filters=filters * 8, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c4)
+        up_sample = concatenate(
+            [Conv2DTranspose(filters=filters * 4, kernel_size=2, strides=2, padding='same')(lr), c3], axis=3)
 
-        up_sample = concatenate([Conv2DTranspose(filters=filters, kernel_size=2,strides=2,padding='same')(c4), c1],axis=3)
+        c5 = Conv2D(filters=filters * 4, kernel_size=3, padding='same', strides=1)(up_sample)
+        lr = LeakyReLU()(c5)
+        n = normalize_layer()(lr)
+        c5 = Conv2D(filters=filters * 4, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c5)
 
+        up_sample = concatenate(
+            [Conv2DTranspose(filters=filters * 2, kernel_size=2, strides=2, padding='same')(lr), c2], axis=3)
 
-        c5 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1, activation='relu')(up_sample)
-        n = normalize_layer()(c5)
-        c5 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1, activation='relu')(n)
+        c6 = Conv2D(filters=filters * 2, kernel_size=3, padding='same', strides=1)(up_sample)
+        lr = LeakyReLU()(c6)
+        n = normalize_layer()(lr)
+        c6 = Conv2D(filters=filters * 2, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c6)
 
-        output = Conv2D(filters=1, kernel_size=1, padding='same',strides=1, activation='tanh')(c5)
+        up_sample = concatenate([Conv2DTranspose(filters=filters, kernel_size=2, strides=2, padding='same')(lr), c1],
+                                axis=3)
+
+        c7 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1)(up_sample)
+        lr = LeakyReLU()(c7)
+        n = normalize_layer()(lr)
+        c7 = Conv2D(filters=filters, kernel_size=3, padding='same', strides=1)(n)
+        lr = LeakyReLU()(c7)
+
+        output = Conv2D(filters=1, kernel_size=1, padding='same', strides=1, activation='tanh')(lr)
 
         return Model(inputs=input_layer, outputs=output)
 
+    def compile_model(self):
+        optimizer = Adam(0.0002, 0.5)
+        self.model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+    def train_on_batch(self, epoch):
+        for epoch_idx in range(0, epoch):
+            loss = self.model.fit_generator(self.train_generator.get_train_image_pair(5000), steps_per_epoch=5000, epochs=1, verbose=1)
+            print(loss)
+            self.test_save(epoch_idx)
+
+
     def test_save(self, epoch_idx):
         os.makedirs(result_path+"/{0}".format(epoch_idx), exist_ok=True)
-
-        for i, (image, label) in enumerate(self.test_generator.data_load(False)):
-
-            results = self.model.predict(image)
-
-            results = (results + 1) * 127.5
-
-            for b in range(self.batch_size):
-                result = np.asarray(results[b], dtype=np.uint8)
-                save_path = result_path+"/{0}/result_{1}.png".format(epoch_idx, i*self.batch_size+b)
-
-                result = cv2.cvtColor(result,cv2.COLOR_GRAY2RGB)
-                result = cv2.cvtColor(result,cv2.COLOR_RGB2GRAY)
-                cv2.imwrite(save_path, result)
-                '''
-                result_image = Image.fromarray(result)
-                result_image.save(result_path+"/{0}/result_{1}.png".format(epoch_idx, i*self.batch_size+b))
-                '''
+        results = self.model.predict_generator(self.train_generator.get_test_image_pair(100), 100, verbose=2)
+        self.model.save_weights(result_path+"/{0}/silnet_model.h5".format(epoch_idx))
+        for idx, result in enumerate(results):
+            result = (result+1)*127.5
+            result = np.asarray(result, np.uint8)
+            cv2.imwrite(result_path+"/{0}/{1}.png".format(epoch_idx,idx),result)
 
 if __name__ == "__main__":
     paths = [
-        "./unet/data/train/input",
-        "./unet/data/train/label",
-        "./unet/data/test/input",
-        "./unet/data/test/label"
+        "D:\\unet/train/image",
+        "D:/unet//train/label",
+        "D:/unet/test/image",
+        "D:/unet/test/label"
     ]
 
     data_gen_args = dict(rotation_range=0.2,
@@ -232,8 +191,26 @@ if __name__ == "__main__":
                          validation_split=0.2)
     data_loader = DataLoader(batch_size=4, paths=paths)
 
-    myGene = trainGenerator(4,'./unet/data/train','input','label',data_gen_args,save_to_dir = None)
-    silnet = SilNet((256,256,1), myGene, data_loader, 4)
-    silnet.model.summary()
-    silnet.train_on_batch(500)
-    Conv2DTranspose()
+    myGene = trainGenerator(4,'D:/unet/train','image','label',data_gen_args,save_to_dir=None)
+
+    generator = HandImageGenerator()
+    silnet = SilNet((256,256,3), generator, 4)
+    silnet.model.load_weights("D:\\GeoConGAN\\result\\57\\silnet_model.h5")
+    for (origin, mask) in generator.get_test_image_pair(1000):
+
+        result = silnet.model.predict(origin)
+        print(origin.shape)
+        print(origin)
+        origin = (origin + 1) * 127.5
+        origin = np.resize(origin, (256,256,3))
+        origin = np.asarray(origin, np.uint8)
+        result = (result + 1) * 127.5
+        result = np.resize(result,(256,256,1))
+        result = np.asarray(result,np.uint8)
+        cv2.imshow("test_m",result)
+        cv2.imshow("test_o",origin)
+
+        cv2.waitKey()
+
+    # silnet.model.summary()
+    # silnet.train_on_batch(500)
