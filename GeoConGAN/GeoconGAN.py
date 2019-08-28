@@ -111,12 +111,12 @@ class GeoConGAN:
             self.test_save(epoch)
 
     def test_save(self, epoch):
-        epoch = epoch+12
+        epoch = epoch+27
         os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}".format(epoch,self.tag), exist_ok=True)
         os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}\\mask".format(epoch,self.tag), exist_ok=True)
         os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}\\origin".format(epoch,self.tag), exist_ok=True)
 
-        for i in range(0, self.generator.get_test_len()//self.batch_size):
+        for i in range(0, 100//self.batch_size):
             (real_image, real_mask, synth_image, synth_mask) = self.generator.get_test_batch(self.batch_size)
             results_synth = self.synth2real.predict_on_batch(synth_image)
             results_real = self.real2synth.predict_on_batch(real_image)
@@ -163,7 +163,8 @@ if __name__ == "__main__":
     silNet.model.load_weights("D:\\GeoConGAN\\silnet\\silnet_model.h5")
 
     geoconGAN = GeoConGAN(silNet.model, (256, 256, 3), 2, generator,"geo")
-    geoconGAN.load_weight("D:\\GeoConGAN\\result_geo_11")
+    geoconGAN.load_weight("D:\\GeoConGAN\\result_geo\\26")
+
     # geoconGAN.train_on_generator(100, 300)
 
     geoconGAN.train_on_generator(100, 2000)
