@@ -174,25 +174,6 @@ class SilNet:
             cv2.imwrite(result_path+"/{0}/{1}.png".format(epoch_idx,idx),result)
 
 if __name__ == "__main__":
-    paths = [
-        "D:\\unet/train/image",
-        "D:/unet//train/label",
-        "D:/unet/test/image",
-        "D:/unet/test/label"
-    ]
-
-    data_gen_args = dict(rotation_range=0.2,
-                         width_shift_range=0.05,
-                         height_shift_range=0.05,
-                         shear_range=0.05,
-                         zoom_range=0.05,
-                         horizontal_flip=True,
-                         fill_mode='nearest',
-                         validation_split=0.2)
-    data_loader = DataLoader(batch_size=4, paths=paths)
-
-    myGene = trainGenerator(4,'D:/unet/train','image','label',data_gen_args,save_to_dir=None)
-
     generator = HandImageGenerator()
     silnet = SilNet((256,256,3), generator, 4)
     silnet.model.load_weights("D:\\GeoConGAN\\result\\57\\silnet_model.h5")
@@ -212,5 +193,3 @@ if __name__ == "__main__":
 
         cv2.waitKey()
 
-    # silnet.model.summary()
-    # silnet.train_on_batch(500)

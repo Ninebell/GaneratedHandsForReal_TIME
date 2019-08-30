@@ -165,7 +165,5 @@ if __name__ == "__main__":
     geoconGAN = GeoConGAN(silNet.model, (256, 256, 3), 2, generator,"geo")
     geoconGAN.load_weight("D:\\GeoConGAN\\result_geo\\26")
 
-    # geoconGAN.train_on_generator(100, 300)
-
     geoconGAN.train_on_generator(100, 2000)
 
