@@ -2,21 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="174d4f56-eaa2-4510-b298-2c0fa5219cf5" name="Default Changelist" comment="kkj">
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/GeoconGAN.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/ImagePreprocess.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/Layers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/test-volume.tif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train-labels.tif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data/membrane/train-volume.tif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/KInetrface.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/GaneratedHandsForReal.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/GaneratedHandsForReal.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/CycleGAN/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/silnet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/GeoConGAN/SilNet/unet/data.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
