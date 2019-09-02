@@ -8,6 +8,8 @@
 '''
 from keras.layers import *
 from keras.models import Model
+from keras import backend as k_b
+import numpy as np
 import keras.losses
 class RegNet:
     def __init__(self, input_shape):
@@ -92,6 +94,85 @@ class RegNet:
     @staticmethod
     def make_projLayer(input_layer):
         d_layer = keras.layers.Reshape((3, 21), input_layer)
+
         return d_layer
 
 
+class gaussian_heatmap(Layer):
+    def __init__(self, **kwargs):
+        super(gaussian_heatmap, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.identity = self.add_weight(name='identiy',
+                                      shape=(2, 2),
+                                      initializer=initializers.Constant(value=[[1, 0], [0, 1]]),
+                                      trainable=False)
+
+        self.identity_test = self.add_weight(name='identiy',
+                                        shape=(1, 2),
+                                        initializer=initializers.Constant(value=[[1, 1]]),
+                                        trainable=False)
+
+        super(gaussian_heatmap, self).build(input_shape)
+
+    def call(self, x):
+       ret = k_b.batch_dot(x, k_b.transpose(x))*(-0.5)
+       return k_b.exp(ret)/ (np.pi*2)
+
+    def compute_output_shape(self, input_shape):
+        shape_a, shape_b = input_shape
+        return [(None, 256, 256)]
+
+
+
+
+def multivariate_gaussian(pos, mu, Sigma):
+    """Return the multivariate Gaussian distribution on array pos.
+
+    pos is an array constructed by packing the meshed arrays of variables
+    x_1, x_2, x_3, ..., x_k into its _last_ dimension.
+
+    """
+    print(mu)
+    n = mu.shape[0]
+    Sigma_det = np.linalg.det(Sigma)
+    Sigma_inv = np.linalg.inv(Sigma)
+    N = np.sqrt((2*np.pi)**n * Sigma_det)
+    # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
+    # way across all the input variables.
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+    return np.exp(-fac / 2) / N
+def gaussian_heat_map(x):
+    N = 256
+    X = np.linspace(0, 255 , N)
+    Y = np.linspace(0, 255, N)
+    X, Y = np.meshgrid(X, Y)
+    mu = np.array([x[0], x[1]])
+    Sigma = np.array([[ 1.0 , 0.], [0.,  1.]])
+
+    # Pack X and Y into a single 3-dimensional array
+    pos = np.empty(X.shape + (2,))
+    pos[:, :, 0] = X
+    pos[:, :, 1] = Y
+    Z = multivariate_gaussian(pos, mu, Sigma)
+    return Z
+
+if __name__ == "__main__":
+    nope=[100,100]
+    z = gaussian_heat_map(nope)
+    print(z[95:105,95:105])
+    input = Input(shape=[1,2])
+    flat = Flatten()(input)
+    gaus = gaussian_heatmap()(flat)
+    model = Model(inputs=[input], outputs=[gaus])
+
+    model.compile(optimizer='adam',loss="mae")
+    x=[[1, 2],
+       [3,4],
+       [5,6]]
+    x = np.asarray(x)
+    x=np.reshape(x, (-1,1,2))
+    y = model.predict(x)
+    model.summary()
+
+    print(y)
