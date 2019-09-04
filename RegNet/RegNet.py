@@ -6,11 +6,42 @@
                    ▼                                                                                       ▼
                 ground truth    (L2 loss)                                                               (L2 loss)
 '''
+import math
 from keras.layers import *
 from keras.models import Model
 from keras import backend as k_b
 import numpy as np
 import keras.losses
+
+class gaussian_heatmap(Layer):
+    def __init__(self, **kwargs):
+        super(gaussian_heatmap, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.ones = k_b.ones((256*256,2))
+        self.camera_intr
+        pair = []
+        for i in range(0, 256*256):
+            pair.append((i%256, i//256))
+        pair = np.asarray(pair)
+        self.back_board = k_b.ones((256*256,2))
+        k_b.set_value(self.back_board, pair)
+
+        super(gaussian_heatmap, self).build(input_shape)
+
+    def call(self, x):
+        k_b.batch_dot(x,)
+        diff = (self.back_board - self.ones*x)
+        fac = K.square(diff[:, :, 0]) + K.square(diff[:, :, 1])
+        son_value = k_b.exp(-fac/2)
+        mom_value = (2*np.pi)
+        result = k_b.reshape(son_value/mom_value, (-1,256,256))
+        return result
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], 256, 256)
+
+
 class RegNet:
     def __init__(self, input_shape):
         self.input_shape = input_shape
@@ -97,33 +128,12 @@ class RegNet:
 
         return d_layer
 
-class gaussian_heatmap(Layer):
-    def __init__(self, **kwargs):
-        super(gaussian_heatmap, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        self.pair_list = np.arange(256*256)
-        self.ones = k_b.ones((256,256))
-        self.pair_list = np.reshape(self.pair_list, (256,256))
-        k_b.set_value(self.ones, self.pair_list)
-
-        print(self.ones)
-#        self.test = k_b.arange(start=1,stop=256*256+1,step=1, dtype='float32')
-        super(gaussian_heatmap, self).build(input_shape)
-
-    def call(self, x):
-        return self.ones
-
-    def compute_output_shape(self, input_shape):
-        print(input_shape)
-        return [(None, 256, 256)]
 
 def multivariate_gaussian(pos, mu, Sigma):
-    """Return the multivariate Gaussian distribution on array pos.
-
+    """
+    Return the multivariate Gaussian distribution on array pos.
     pos is an array constructed by packing the meshed arrays of variables
     x_1, x_2, x_3, ..., x_k into its _last_ dimension.
-
     """
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
@@ -133,9 +143,10 @@ def multivariate_gaussian(pos, mu, Sigma):
     # way across all the input variables.
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
     return np.exp(-fac / 2) / N
+
 def gaussian_heat_map(x):
     N = 256
-    X = np.linspace(0, 255 , N)
+    X = np.linspace(0, 255, N)
     Y = np.linspace(0, 255, N)
     X, Y = np.meshgrid(X, Y)
     mu = np.array([x[0], x[1]])
@@ -145,6 +156,7 @@ def gaussian_heat_map(x):
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
+
     Z = multivariate_gaussian(pos, mu, Sigma)
     return Z
 
@@ -158,27 +170,22 @@ if __name__ == "__main__":
     input = Input(shape=(1,2))
 #    flat = Flatten()(input)
 
-#    gaus = gaussian_heatmap()(input)
+    gaus = gaussian_heatmap()(input)
     minuses = []
-    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
+#    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
 
-    model = Model(inputs=[input], outputs=[conv])
+    model = Model(inputs=[input], outputs=[gaus])
 
     model.compile(optimizer='adam',loss="mae")
 
-    x=[[1,2,
-        1,2],
-       [3,4,
-        3,4],
-       [5,6,
-        5,6],
-       [7,8,
-        7,8]]
-
+    x=[[2,1],
+       [3,4],
+       [5,6],
+       [7,8]]
     x = np.asarray(x, dtype=np.float32)
-    x = np.reshape(x, (-1,1,2,2))
+    x = np.reshape(x, (-1,1,2))
     y = np.arange(1,256*256+1,1)
-    y = np.reshape(y, (256,256))
+    y = np.reshape(y, (256, 256))
     ys = []
     ys.append(y)
     ys.append(y)
@@ -186,10 +193,12 @@ if __name__ == "__main__":
     ys.append(y)
     ys = np.asarray(ys)
 
-
     model.summary()
+    y = model.fit(x,ys)
     y = model.predict(x)
-    print(y)
+    print("***************************************************************")
+    print(y[0])
+    print("***************************************************************")
 
 
-
+    print(gaussian_heat_map((2,1)))
