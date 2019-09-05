@@ -13,33 +13,67 @@ from keras import backend as k_b
 import numpy as np
 import keras.losses
 
-class projLayer(Layer):
-    def __init__(self, **kwargs):
-        super(projLayer, self).__init__(**kwargs)
+
+
+def change3D_2D(points, crop_param):
+    intrinsics = [[617.173, 0, 315.453],
+                  [0, 617.173, 242.256],
+                  [0, 0, 1]]
+    intrinsics = np.asarray(intrinsics, np.float64)
+    k = np.dot(intrinsics, points)
+    points_2d = ((k[0]/k[2]-crop_param[0])*crop_param[2], (k[1]/k[2]-crop_param[1])*crop_param[2])
+    return points_2d
+
+
+class ProjLayer(Layer):
+
+    def __init__(self, input_size, **kwargs):
+        self.input_size = input_size
+        super(ProjLayer, self).__init__(**kwargs)
+
+    def calc_cell_units(self):
+        return self.input_size[0]*self.input_size[1]
 
     def build(self, input_shape):
-        self.ones = k_b.ones((256*256,2))
-        self.camera_intr
+        self.ones = k_b.ones((self.calc_cell_units(), 2))
+
+        self.intrinsics = [[617.173, 0, 315.453],
+                           [0, 617.173, 242.256],
+                           [0, 0, 1]]
+
+        self.crop_value = []
+
+        self.intrinsics_tensor = k_b.ones((3,3))
+        k_b.set_value(self.intrinsics_tensor, self.intrinsics)
+        self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor,(1,3,3))
         pair = []
-        for i in range(0, 256*256):
-            pair.append((i%256, i//256))
+        for i in range(0, self.calc_cell_units()):
+            pair.append((i%self.input_size[0], i//self.input_size[1]))
         pair = np.asarray(pair)
-        self.back_board = k_b.ones((256*256,2))
+        self.back_board = k_b.ones((self.calc_cell_units(),2))
         k_b.set_value(self.back_board, pair)
 
-        super(projLayer, self).build(input_shape)
+        super(ProjLayer, self).build(input_shape)
 
     def call(self, x):
-        k_b.batch_dot(x,)
-        diff = (self.back_board - self.ones*x)
+        joint_3d = x[:,:,:3]
+        joint_3d = k_b.reshape(joint_3d,(-1,3,1))
+        crop_prom = x[:,:,3:]
+        crop_prom = k_b.reshape(crop_prom,(-1,1,3))
+        global_joint_2d = (k_b.batch_dot(self.intrinsics_tensor, joint_3d))
+        global_joint_2d = k_b.reshape(global_joint_2d, (-1,1,3))
+        global_joint_2d = global_joint_2d[:,:,:2] / global_joint_2d[:,:,2]
+        joint_2d = (global_joint_2d - crop_prom[:,:,:2])*crop_prom[:,:,2]
+        diff = (self.back_board - self.ones*joint_2d)
+
         fac = K.square(diff[:, :, 0]) + K.square(diff[:, :, 1])
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
-        result = k_b.reshape(son_value/mom_value, (-1,256,256))
+        result = k_b.reshape(son_value/mom_value, (-1,self.input_size[0],self.input_size[1]))
         return result
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], 256, 256)
+        return (input_shape[0], self.input_size[0], self.input_size[1])
 
 
 class RegNet:
@@ -48,12 +82,14 @@ class RegNet:
         self.model = self.__build__()
 
     def __build__(self):
-        input_layer = Input(self.input_shape)
-        res4c = self.__build__resnet__(input_layer)
+        image_input_layer = Input(self.input_shape)
+        crop_param_input_layer = Input((1,3))
+        res4c = self.__build__resnet__(image_input_layer)
         self.intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
-
+        projLayer = ProjLayer((256,256))(self.intermediate_3D_position)
+        conv = RegNet.make_conv(projLayer)
         output_layer = None
-        return Model(x=[input_layer], y=[output_layer])
+        return Model(x=[image_input_layer,crop_param_input_layer], y=[output_layer])
 
     def __build__resnet__(self, input_layer):
         feature = 64
@@ -72,6 +108,28 @@ class RegNet:
         res4c = RegNet.residual_block_identity_skip(feature*4, feature*16, res4b)
         res4d = RegNet.residual_block_identity_skip(feature*4, feature*16, res4c)
         return res4d
+
+    @staticmethod
+    def make_main_loss(input_layer):
+        inner200 = RegNet.inner_product(input_layer,200)
+        inner3joints = RegNet.inner_product(inner200,3*21)
+
+        conv = RegNet.conv_block(3,1,64,input_layer)
+        deconv = RegNet.deconv_block(4, 2, 256*256, conv)
+        deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
+        return deconv, inner3joints
+
+    @staticmethod
+    def make_conv(input_layer):
+        conv4e = RegNet.conv_block(3,1,512,input_layer)
+        conv4f = RegNet.conv_block(3,1,256, conv4e)
+        return conv4f
+
+    @staticmethod
+    def deconv_block(k, s, fm, input_layer, fixed=False):
+        
+
+        return
 
     @staticmethod
     def conv_block(k, s, f, input_layer):
@@ -122,12 +180,6 @@ class RegNet:
         inner = RegNet.inner_product(input_layer, 3*21)
         return inner
 
-    @staticmethod
-    def make_projLayer(input_layer):
-        d_layer = keras.layers.Reshape((3, 21), input_layer)
-
-        return d_layer
-
 
 def multivariate_gaussian(pos, mu, Sigma):
     """
@@ -161,26 +213,16 @@ def gaussian_heat_map(x):
     return Z
 
 
-def change3D_2D(points, crop_param):
-    intrinsics = [[617.173, 0, 315.453],
-                  [0, 617.173, 242.256],
-                  [0, 0, 1]]
-    intrinsics = np.asarray(intrinsics, np.float64)
-    k = np.dot(intrinsics, points)
-    points_2d = ((k[0]/k[2]-crop_param[0])*crop_param[2], (k[1]/k[2]-crop_param[1])*crop_param[2])
-    return points_2d
-
-
-if __name__ == "__main__2":
+if __name__ == "__main__":
 
 
     nope=[100,100]
     z = gaussian_heat_map(nope)
 
-    input = Input(shape=(1,2))
+    input = Input(shape=(1,6))
 #    flat = Flatten()(input)
 
-    gaus = gaussian_heatmap()(input)
+    gaus = ProjLayer((256,256))(input)
     minuses = []
 #    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
 
@@ -188,12 +230,9 @@ if __name__ == "__main__2":
 
     model.compile(optimizer='adam',loss="mae")
 
-    x=[[2,1],
-       [3,4],
-       [5,6],
-       [7,8]]
+    x=[[-54.176,7.2007,375.21,217.71,121.36,0.84725]]
     x = np.asarray(x, dtype=np.float32)
-    x = np.reshape(x, (-1,1,2))
+    x = np.reshape(x, (-1,1,6))
     y = np.arange(1,256*256+1,1)
     y = np.reshape(y, (256, 256))
     ys = []
@@ -204,11 +243,11 @@ if __name__ == "__main__2":
     ys = np.asarray(ys)
 
     model.summary()
-    y = model.fit(x,ys)
+#    y = model.fit(x,ys)
     y = model.predict(x)
     print("***************************************************************")
     print(y[0])
     print("***************************************************************")
-
-
-    print(gaussian_heat_map((2,1)))
+    points = [-54.176, 7.2007, 375.21]
+    crop_param = [217.71,121.36,0.84725]
+    print(gaussian_heat_map((7.6291,112.74)))
