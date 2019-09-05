@@ -13,9 +13,9 @@ from keras import backend as k_b
 import numpy as np
 import keras.losses
 
-class gaussian_heatmap(Layer):
+class projLayer(Layer):
     def __init__(self, **kwargs):
-        super(gaussian_heatmap, self).__init__(**kwargs)
+        super(projLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         self.ones = k_b.ones((256*256,2))
@@ -27,7 +27,7 @@ class gaussian_heatmap(Layer):
         self.back_board = k_b.ones((256*256,2))
         k_b.set_value(self.back_board, pair)
 
-        super(gaussian_heatmap, self).build(input_shape)
+        super(projLayer, self).build(input_shape)
 
     def call(self, x):
         k_b.batch_dot(x,)
@@ -161,7 +161,17 @@ def gaussian_heat_map(x):
     return Z
 
 
-if __name__ == "__main__":
+def change3D_2D(points, crop_param):
+    intrinsics = [[617.173, 0, 315.453],
+                  [0, 617.173, 242.256],
+                  [0, 0, 1]]
+    intrinsics = np.asarray(intrinsics, np.float64)
+    k = np.dot(intrinsics, points)
+    points_2d = ((k[0]/k[2]-crop_param[0])*crop_param[2], (k[1]/k[2]-crop_param[1])*crop_param[2])
+    return points_2d
+
+
+if __name__ == "__main__2":
 
 
     nope=[100,100]
