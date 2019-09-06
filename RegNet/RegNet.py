@@ -56,6 +56,7 @@ class ProjLayer(Layer):
         super(ProjLayer, self).build(input_shape)
 
     def call(self, x):
+        x = k_b.reshape(x, (-1,-1,6))
         joint_3d = x[:,:,:3]
         joint_3d = k_b.reshape(joint_3d,(-1,3,1))
         crop_prom = x[:,:,3:]
@@ -69,12 +70,11 @@ class ProjLayer(Layer):
         fac = K.square(diff[:, :, 0]) + K.square(diff[:, :, 1])
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
-        result = k_b.reshape(son_value/mom_value, (-1,self.input_size[0],self.input_size[1]))
+        result = k_b.reshape(son_value/mom_value, (-1,self.input_size[0],self.input_size[1],1))
         return result
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], self.input_size[0], self.input_size[1])
-
+        return (input_shape[0], self.input_size[0], self.input_size[1], 1)
 
 class RegNet:
     def __init__(self, input_shape):
@@ -83,13 +83,14 @@ class RegNet:
 
     def __build__(self):
         image_input_layer = Input(self.input_shape)
+        print(image_input_layer.shape)
         crop_param_input_layer = Input((1,3))
         res4c = self.__build__resnet__(image_input_layer)
         self.intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
         projLayer = ProjLayer((256,256))(self.intermediate_3D_position)
         conv = RegNet.make_conv(projLayer)
-        output_layer = None
-        return Model(x=[image_input_layer,crop_param_input_layer], y=[output_layer])
+        output_layer1, output_layer2 = RegNet.make_main_loss(conv)
+        return Model(inputs=[image_input_layer,crop_param_input_layer], outputs=[output_layer1, output_layer2])
 
     def __build__resnet__(self, input_layer):
         feature = 64
@@ -112,28 +113,29 @@ class RegNet:
     @staticmethod
     def make_main_loss(input_layer):
         inner200 = RegNet.inner_product(input_layer,200)
-        inner3joints = RegNet.inner_product(inner200,3*21)
+        inner3joints = RegNet.inner_product(inner200,3*21,False)
 
-        conv = RegNet.conv_block(3,1,64,input_layer)
+        conv = Conv2D(kernel_size=3, strides=1, filters=64)(input_layer)
         deconv = RegNet.deconv_block(4, 2, 256*256, conv)
         deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
         return deconv, inner3joints
 
     @staticmethod
     def make_conv(input_layer):
+        print(input_layer.shape)
         conv4e = RegNet.conv_block(3,1,512,input_layer)
         conv4f = RegNet.conv_block(3,1,256, conv4e)
         return conv4f
 
     @staticmethod
     def deconv_block(k, s, fm, input_layer, fixed=False):
-        
-
-        return
+        return Deconv2D(filters=fm,kernel_size=k,strides=s,padding='same')(input_layer)
 
     @staticmethod
     def conv_block(k, s, f, input_layer):
-        conv = Conv2D(kernel_size=k, strides=s, filters=f)(input_layer)
+        print(input_layer.shape)
+        conv = Conv2D(kernel_size=k, strides=s, filters=f, padding='same')(input_layer)
+        print(conv.shape)
         batch = BatchNormalization()(conv)
         # To - Do
         # I need to apply Scale
@@ -170,9 +172,10 @@ class RegNet:
 #    |    InnerProduct   |       Fully-Connected     |
 #    |    EuclideanLoss  |            L2             |
     @staticmethod
-    def inner_product(input_layer, output_num):
-        flat = Flatten()(input_layer)
-        dense = Dense(output_num)(flat)
+    def inner_product(input_layer, output_num, flatten=True):
+        if flatten:
+            input_layer = Flatten()(input_layer)
+        dense = Dense(output_num)(input_layer)
         return dense
 
     @staticmethod
@@ -216,6 +219,8 @@ def gaussian_heat_map(x):
 if __name__ == "__main__":
 
 
+    regnet = RegNet((256,256,3))
+    regnet.model.summary()
     nope=[100,100]
     z = gaussian_heat_map(nope)
 
