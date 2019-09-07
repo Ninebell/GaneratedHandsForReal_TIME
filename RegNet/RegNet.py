@@ -23,9 +23,8 @@ def change3D_2D(points, crop_param):
 
 
 class ProjLayer(Layer):
-    def __init__(self, input_size, batch_size, **kwargs):
+    def __init__(self, input_size, **kwargs):
         self.input_size = input_size
-        self.batch_size = batch_size
         super(ProjLayer, self).__init__(**kwargs)
 
     def calc_cell_units(self):
@@ -33,6 +32,9 @@ class ProjLayer(Layer):
 
     def build(self, input_shape):
         self.ones = k_b.ones((21, self.calc_cell_units(), 2))
+        self.test = self.add_weight(name='test',shape=(21, self.calc_cell_units(), 2),trainable=False,
+                                    initializer=initializers.constant(1))
+
 
         self.intrinsics = [[617.173, 0, 315.453],
                            [0, 617.173, 242.256],
@@ -50,56 +52,32 @@ class ProjLayer(Layer):
         pair = np.asarray(pair)
         self.back_board = k_b.ones((self.calc_cell_units(), 2))
         k_b.set_value(self.back_board, pair)
-        # self.back_board = k_b.repeat(self.back_board, 21)
-        # self.back_board = k_b.reshape(self.back_board, (21,self.calc_cell_units(),2))
 
-#        self.back_board = k_b.repeat(self.back_board, 3)
         print(self.back_board.shape)
         super(ProjLayer, self).build(input_shape)
 
     def call(self, x):
-        # x = k_b.reshape(x, (-1, -1, 6))
-        # joint_3d = x[:, :, :3]
-        # crop_prom = x[:, :, 3:]
         joint_3d = x[0]
-        print('joint3d', joint_3d.shape)
-        # joint_3d = k_b.transpose(joint_3d)
-#        joint_3d = k_b.reshape(joint_3d, (-1, 3, 21))
         crop_prom = x[1]
-        print("crop_prom: ",crop_prom.shape)
-#        crop_prom = k_b.reshape(crop_prom, (-1, 1, 3))
-#        joint_3d = k_b.transpose(joint_3d)
-
-        # print('joint3d_transpose: ', joint_3d.shape)
         self.intrinsics_tensor = k_b.transpose(self.intrinsics_tensor)
         global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)
-        print('shape: ', global_joint_2d.shape)
-
         global_joint_2d = k_b.reshape(global_joint_2d, (-1, 21, 3))
-
-        print('shape: ', global_joint_2d.shape)
         scale = k_b.repeat(global_joint_2d[:, :, 2], 2)
         scale = k_b.reshape(scale, (-1, 21, 2))
-        print('scale: ', scale.shape)
         global_joint_2d = global_joint_2d[:, :, :2] / scale
-        print("global_joint_2d: ", global_joint_2d.shape)
         joint_2d = (global_joint_2d - crop_prom[:, :, :2])*crop_prom[:, :, 2]
         joint_2d = k_b.reshape(joint_2d,(-1,21,1,2))
-        print("joint_2d: ", joint_2d.shape)
-        print("joint_2d ones: ", (joint_2d * self.ones).shape)
-        print("back_board: ", self.back_board.shape)
-        joint_2d_ones = joint_2d * self.ones
+        joint_2d_ones = joint_2d * self.test
         diff = (joint_2d_ones - self.back_board)
-        print("diff: ", diff.shape)
-        fac = K.square(diff[:, :, 0]) + K.square(diff[:, :, 1])
+        fac = k_b.square(diff[:, :, 0]) + k_b.square(diff[:, :, 1])
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
-        print(fac.shape)
         result = k_b.reshape(son_value/mom_value, (-1, self.input_size[0], self.input_size[1], 21))
         return result
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], self.input_size[0], self.input_size[1], 1)
+        return (None, self.input_size[0], self.input_size[1], 21)
+
 
 class RegNet:
     def __init__(self, input_shape):
@@ -107,18 +85,16 @@ class RegNet:
         self.model = self.__build__()
 
     def __build__(self):
-        image_input_layer = Input(self.input_shape)
-        print(image_input_layer.shape)
-        crop_param_input_layer = Input((1,3))
-        res4c = self.__build__resnet__(image_input_layer)
+        self.image_input_layer = Input(self.input_shape)
+        self.crop_param_input_layer = Input(shape=(1,3))
+        res4c = self.__build__resnet__(self.image_input_layer)
         self.intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
-        print(self.intermediate_3D_position.shape, crop_param_input_layer.shape)
-#        merge = k_b.concatenate([self.intermediate_3D_position, crop_param_input_layer])
-#        self.intermediate_3D_position = RegNet.make_intermediate_3D_position(image_input_layer)
-        projLayer = ProjLayer((256,256), batch_size=2)([self.intermediate_3D_position, crop_param_input_layer])
+        projLayer = ProjLayer((256,256))([self.intermediate_3D_position, self.crop_param_input_layer])
         conv = RegNet.make_conv(projLayer)
         output_layer1, output_layer2 = RegNet.make_main_loss(conv)
-        return Model(inputs=[image_input_layer,crop_param_input_layer], outputs=[output_layer1, output_layer2])
+        print(self.image_input_layer.shape, self.crop_param_input_layer.shape)
+        print(output_layer1.shape, output_layer2.shape)
+        return Model(inputs=[self.image_input_layer, self.crop_param_input_layer], outputs=[output_layer1, output_layer2])
 
     def __build__resnet__(self, input_layer):
         feature = 64
@@ -146,25 +122,23 @@ class RegNet:
         inner200 = RegNet.inner_product(conv, 200)
         inner3joints = RegNet.inner_product(inner200,3*21,False)
 
-        conv = Conv2D(kernel_size=3, strides=1, filters=1, padding='same')(input_layer)
+        conv = Conv2D(kernel_size=3, strides=1, filters=21, padding='same',name='heatmaps')(input_layer)
         # deconv = RegNet.deconv_block(4, 2, 256*256, conv)
         # deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
         return conv, inner3joints
 
     @staticmethod
     def make_conv(input_layer):
-        print(input_layer.shape)
-        conv4e = RegNet.conv_block(3,1,512,input_layer)
-        conv4f = RegNet.conv_block(3,1,256, conv4e)
+        conv4e = RegNet.conv_block(5, 1, 512, input_layer)
+        conv4f = RegNet.conv_block(5, 1, 256, conv4e)
         return conv4f
 
     @staticmethod
     def deconv_block(k, s, fm, input_layer, fixed=False):
-        return Deconv2D(filters=fm,kernel_size=k,strides=s,padding='same')(input_layer)
+        return Deconv2D(filters=fm, kernel_size=k, strides=s, padding='same')(input_layer)
 
     @staticmethod
     def conv_block(k, s, f, input_layer):
-        print('what',input_layer.shape)
         conv = Conv2D(kernel_size=k, strides=s, filters=f, padding='same')(input_layer)
         batch = BatchNormalization()(conv)
         # To - Do
@@ -211,7 +185,7 @@ class RegNet:
     @staticmethod
     def make_intermediate_3D_position(input_layer):
         inner = RegNet.inner_product(input_layer, 3*21)
-        inner = k_b.reshape(inner,(-1, 21, 3))
+        inner = Reshape((21, 3), input_shape=inner.shape)(inner)
         return inner
 
 def multivariate_gaussian(pos, mu, Sigma):
@@ -247,35 +221,51 @@ def gaussian_heat_map(x):
 
 
 if __name__ == "__main__":
-   nope=[100,100]
+    nope=[100,100]
     z = gaussian_heat_map(nope)
-
-    input = Input(shape=(1,6))
+    reg = RegNet((256,256,3))
+    reg.model.summary()
+    reg.model.compile(optimizer='adam',loss='mae')
+    input1 = Input(shape=(2, 21, 3))
+    input2 = Input(shape=(1, 3))
 #    flat = Flatten()(input)
 
-   gaus = ProjLayer((256,256))(input)
-    minuses = []
-#    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
+    gaus = ProjLayer((256,256))([input1, input2])
+    print(gaus.shape)
 
-    model = Model(inputs=[input], outputs=[gaus])
+    conv = Conv2D(kernel_size=3, filters=256,strides=1,padding='same')(gaus)
 
-    model.compile(optimizer='adam',loss="mae")
+    model = Model(inputs=[input1,input2],outputs=conv)
 
-    y = np.arange(1,256*256+1,1)
-    y = np.reshape(y, (256, 256))
-    ys = []
-    ys.append(y)
-    ys.append(y)
-    ys.append(y)
-    ys.append(y)
-    ys = np.asarray(ys)
 
-    model.summary()
-    y = model.predict(x)
-
-    print("***************************************************************")
-    print(y[0])
-    print("***************************************************************")
-    points = [-54.176, 7.2007, 375.21]
-    crop_param = [217.71,121.36,0.84725]
-    print(gaussian_heat_map((7.6291,112.74)))
+# #    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
+#
+#     model = Model(inputs=[input1], outputs=[gaus])
+#
+#     model.compile(optimizer='adam',loss="mae")
+#     x = [[-54.176, 7.2007, 375.21]]
+#     crop = [[217.71, 121.36, 0.84725]]
+#     x = np.asarray(x, dtype=np.float32)
+#     x = np.reshape(x, (1,1,3))
+#     crop = np.asarray(crop, dtype=np.float32)
+#     crop = np.reshape(crop, (1, 1, 3))
+# #    x = np.reshape(x, (-1, 2, 3))
+#     y = np.arange(1, 256 * 256 + 1, 1)
+#     y = np.arange(1,256*256+1,1)
+#     y = np.reshape(y, (256, 256))
+#     ys = []
+#     ys.append(y)
+#     ys.append(y)
+#     ys.append(y)
+#     ys.append(y)
+#     ys = np.asarray(ys)
+#
+#     model.summary()
+#     y = model.predict(x=[x, crop])
+#
+#     print("***************************************************************")
+#     print(y[0])
+#     print("***************************************************************")
+#     points = [-54.176, 7.2007, 375.21]
+#     crop_param = [217.71,121.36,0.84725]
+#     print(gaussian_heat_map((7.6291,112.74)))
