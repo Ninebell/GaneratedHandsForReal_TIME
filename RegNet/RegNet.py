@@ -6,13 +6,10 @@
                    ▼                                                                                       ▼
                 ground truth    (L2 loss)                                                               (L2 loss)
 '''
-import math
 from keras.layers import *
 from keras.models import Model
 from keras import backend as k_b
 import numpy as np
-import keras.losses
-
 
 
 def change3D_2D(points, crop_param):
@@ -26,16 +23,16 @@ def change3D_2D(points, crop_param):
 
 
 class ProjLayer(Layer):
-
-    def __init__(self, input_size, **kwargs):
+    def __init__(self, input_size, batch_size, **kwargs):
         self.input_size = input_size
+        self.batch_size = batch_size
         super(ProjLayer, self).__init__(**kwargs)
 
     def calc_cell_units(self):
         return self.input_size[0]*self.input_size[1]
 
     def build(self, input_shape):
-        self.ones = k_b.ones((self.calc_cell_units(), 2))
+        self.ones = k_b.ones((21, self.calc_cell_units(), 2))
 
         self.intrinsics = [[617.173, 0, 315.453],
                            [0, 617.173, 242.256],
@@ -45,32 +42,60 @@ class ProjLayer(Layer):
 
         self.intrinsics_tensor = k_b.ones((3,3))
         k_b.set_value(self.intrinsics_tensor, self.intrinsics)
-        self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor,(1,3,3))
+        self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor, (1, 3, 3))
+
         pair = []
         for i in range(0, self.calc_cell_units()):
             pair.append((i%self.input_size[0], i//self.input_size[1]))
         pair = np.asarray(pair)
-        self.back_board = k_b.ones((self.calc_cell_units(),2))
+        self.back_board = k_b.ones((self.calc_cell_units(), 2))
         k_b.set_value(self.back_board, pair)
+        # self.back_board = k_b.repeat(self.back_board, 21)
+        # self.back_board = k_b.reshape(self.back_board, (21,self.calc_cell_units(),2))
 
+#        self.back_board = k_b.repeat(self.back_board, 3)
+        print(self.back_board.shape)
         super(ProjLayer, self).build(input_shape)
 
     def call(self, x):
-        x = k_b.reshape(x, (-1,-1,6))
-        joint_3d = x[:,:,:3]
-        joint_3d = k_b.reshape(joint_3d,(-1,3,1))
-        crop_prom = x[:,:,3:]
-        crop_prom = k_b.reshape(crop_prom,(-1,1,3))
-        global_joint_2d = (k_b.batch_dot(self.intrinsics_tensor, joint_3d))
-        global_joint_2d = k_b.reshape(global_joint_2d, (-1,1,3))
-        global_joint_2d = global_joint_2d[:,:,:2] / global_joint_2d[:,:,2]
-        joint_2d = (global_joint_2d - crop_prom[:,:,:2])*crop_prom[:,:,2]
-        diff = (self.back_board - self.ones*joint_2d)
+        # x = k_b.reshape(x, (-1, -1, 6))
+        # joint_3d = x[:, :, :3]
+        # crop_prom = x[:, :, 3:]
+        joint_3d = x[0]
+        print('joint3d', joint_3d.shape)
+        # joint_3d = k_b.transpose(joint_3d)
+#        joint_3d = k_b.reshape(joint_3d, (-1, 3, 21))
+        crop_prom = x[1]
+        print("crop_prom: ",crop_prom.shape)
+#        crop_prom = k_b.reshape(crop_prom, (-1, 1, 3))
+#        joint_3d = k_b.transpose(joint_3d)
 
+        # print('joint3d_transpose: ', joint_3d.shape)
+        self.intrinsics_tensor = k_b.transpose(self.intrinsics_tensor)
+        global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)
+        print('shape: ', global_joint_2d.shape)
+
+        global_joint_2d = k_b.reshape(global_joint_2d, (-1, 21, 3))
+
+        print('shape: ', global_joint_2d.shape)
+        scale = k_b.repeat(global_joint_2d[:, :, 2], 2)
+        scale = k_b.reshape(scale, (-1, 21, 2))
+        print('scale: ', scale.shape)
+        global_joint_2d = global_joint_2d[:, :, :2] / scale
+        print("global_joint_2d: ", global_joint_2d.shape)
+        joint_2d = (global_joint_2d - crop_prom[:, :, :2])*crop_prom[:, :, 2]
+        joint_2d = k_b.reshape(joint_2d,(-1,21,1,2))
+        print("joint_2d: ", joint_2d.shape)
+        print("joint_2d ones: ", (joint_2d * self.ones).shape)
+        print("back_board: ", self.back_board.shape)
+        joint_2d_ones = joint_2d * self.ones
+        diff = (joint_2d_ones - self.back_board)
+        print("diff: ", diff.shape)
         fac = K.square(diff[:, :, 0]) + K.square(diff[:, :, 1])
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
-        result = k_b.reshape(son_value/mom_value, (-1,self.input_size[0],self.input_size[1],1))
+        print(fac.shape)
+        result = k_b.reshape(son_value/mom_value, (-1, self.input_size[0], self.input_size[1], 21))
         return result
 
     def compute_output_shape(self, input_shape):
@@ -87,7 +112,10 @@ class RegNet:
         crop_param_input_layer = Input((1,3))
         res4c = self.__build__resnet__(image_input_layer)
         self.intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
-        projLayer = ProjLayer((256,256))(self.intermediate_3D_position)
+        print(self.intermediate_3D_position.shape, crop_param_input_layer.shape)
+#        merge = k_b.concatenate([self.intermediate_3D_position, crop_param_input_layer])
+#        self.intermediate_3D_position = RegNet.make_intermediate_3D_position(image_input_layer)
+        projLayer = ProjLayer((256,256), batch_size=2)([self.intermediate_3D_position, crop_param_input_layer])
         conv = RegNet.make_conv(projLayer)
         output_layer1, output_layer2 = RegNet.make_main_loss(conv)
         return Model(inputs=[image_input_layer,crop_param_input_layer], outputs=[output_layer1, output_layer2])
@@ -112,13 +140,16 @@ class RegNet:
 
     @staticmethod
     def make_main_loss(input_layer):
-        inner200 = RegNet.inner_product(input_layer,200)
+        conv = Conv2D(kernel_size=3, strides=2, filters=256, padding='same')(input_layer)
+        conv = Conv2D(kernel_size=3, strides=2, filters=512, padding='same')(conv)
+        conv = Conv2D(kernel_size=3, strides=2, filters=1024, padding='same')(conv)
+        inner200 = RegNet.inner_product(conv, 200)
         inner3joints = RegNet.inner_product(inner200,3*21,False)
 
-        conv = Conv2D(kernel_size=3, strides=1, filters=64)(input_layer)
-        deconv = RegNet.deconv_block(4, 2, 256*256, conv)
-        deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
-        return deconv, inner3joints
+        conv = Conv2D(kernel_size=3, strides=1, filters=1, padding='same')(input_layer)
+        # deconv = RegNet.deconv_block(4, 2, 256*256, conv)
+        # deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
+        return conv, inner3joints
 
     @staticmethod
     def make_conv(input_layer):
@@ -133,9 +164,8 @@ class RegNet:
 
     @staticmethod
     def conv_block(k, s, f, input_layer):
-        print(input_layer.shape)
+        print('what',input_layer.shape)
         conv = Conv2D(kernel_size=k, strides=s, filters=f, padding='same')(input_layer)
-        print(conv.shape)
         batch = BatchNormalization()(conv)
         # To - Do
         # I need to apply Scale
@@ -181,6 +211,7 @@ class RegNet:
     @staticmethod
     def make_intermediate_3D_position(input_layer):
         inner = RegNet.inner_product(input_layer, 3*21)
+        inner = k_b.reshape(inner,(-1, 21, 3))
         return inner
 
 
@@ -235,7 +266,7 @@ if __name__ == "__main__":
 
     model.compile(optimizer='adam',loss="mae")
 
-    x=[[-54.176,7.2007,375.21,217.71,121.36,0.84725]]
+    x=[[-54.176,7.2007,375.21, 217.71,121.36,0.84725]]
     x = np.asarray(x, dtype=np.float32)
     x = np.reshape(x, (-1,1,6))
     y = np.arange(1,256*256+1,1)
@@ -248,8 +279,8 @@ if __name__ == "__main__":
     ys = np.asarray(ys)
 
     model.summary()
-#    y = model.fit(x,ys)
     y = model.predict(x)
+
     print("***************************************************************")
     print(y[0])
     print("***************************************************************")
