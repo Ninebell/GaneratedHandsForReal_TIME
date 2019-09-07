@@ -103,8 +103,8 @@ class gaussian_heatmap(Layer):
 
     def build(self, input_shape):
         self.pair_list = np.arange(256*256)
-        self.ones = k_b.ones((256,256))
-        self.pair_list = np.reshape(self.pair_list, (256,256))
+        self.ones = k_b.ones((256,256,2))
+        self.pair_list = np.reshape(self.pair_list, (256,256,2))
         k_b.set_value(self.ones, self.pair_list)
 
         print(self.ones)
@@ -112,7 +112,9 @@ class gaussian_heatmap(Layer):
         super(gaussian_heatmap, self).build(input_shape)
 
     def call(self, x):
-        return self.ones
+        minus = self.ones - x
+
+        return minus
 
     def compute_output_shape(self, input_shape):
         print(input_shape)
@@ -150,33 +152,26 @@ def gaussian_heat_map(x):
 
 
 if __name__ == "__main__":
-
-
     nope=[100,100]
     z = gaussian_heat_map(nope)
 
     input = Input(shape=(1,2))
 #    flat = Flatten()(input)
 
-#    gaus = gaussian_heatmap()(input)
+    gaus = gaussian_heatmap()(input)
     minuses = []
-    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
 
-    model = Model(inputs=[input], outputs=[conv])
+    model = Model(inputs=[input], outputs=[gaus])
 
     model.compile(optimizer='adam',loss="mae")
 
-    x=[[1,2,
-        1,2],
-       [3,4,
-        3,4],
-       [5,6,
-        5,6],
-       [7,8,
-        7,8]]
+    x=[[1,2],
+       [3,4],
+       [5,6],
+       [7,8]]
 
     x = np.asarray(x, dtype=np.float32)
-    x = np.reshape(x, (-1,1,2,2))
+    x = np.reshape(x, (-1,1,2))
     y = np.arange(1,256*256+1,1)
     y = np.reshape(y, (256,256))
     ys = []
