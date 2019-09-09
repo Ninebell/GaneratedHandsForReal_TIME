@@ -6,9 +6,13 @@
                    ▼                                                                                       ▼
                 ground truth    (L2 loss)                                                               (L2 loss)
 '''
+import csv
+from skimage import io
 from keras.layers import *
 from keras.models import Model
 from keras import backend as k_b
+from keras.utils import Sequence
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -35,10 +39,9 @@ class ProjLayer(Layer):
         self.test = self.add_weight(name='test',shape=(21, self.calc_cell_units(), 2),trainable=False,
                                     initializer=initializers.constant(1))
 
-
-        self.intrinsics = [[617.173, 0, 315.453],
-                           [0, 617.173, 242.256],
-                           [0, 0, 1]]
+        self.intrinsics = [[617.173, 0, 0.],
+                           [0., 617.173, 0],
+                           [315.453, 242.256, 1]]
 
         self.crop_value = []
 
@@ -62,17 +65,22 @@ class ProjLayer(Layer):
         self.intrinsics_tensor = k_b.transpose(self.intrinsics_tensor)
         global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)
         global_joint_2d = k_b.reshape(global_joint_2d, (-1, 21, 3))
-        scale = k_b.repeat(global_joint_2d[:, :, 2], 2)
-        scale = k_b.reshape(scale, (-1, 21, 2))
+        # return global_joint_2d
+        scale = global_joint_2d[:,:,2]
+        scale = k_b.reshape(scale, (-1,21,1))
         global_joint_2d = global_joint_2d[:, :, :2] / scale
         joint_2d = (global_joint_2d - crop_prom[:, :, :2])*crop_prom[:, :, 2]
-        joint_2d = k_b.reshape(joint_2d,(-1,21,1,2))
+        joint_2d = k_b.reshape(joint_2d, (-1, 21, 1, 2))
         joint_2d_ones = joint_2d * self.test
         diff = (joint_2d_ones - self.back_board)
-        fac = k_b.square(diff[:, :, 0]) + k_b.square(diff[:, :, 1])
+        print(diff.shape)
+        fac = k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])
+        print(fac.shape)
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
-        result = k_b.reshape(son_value/mom_value, (-1, self.input_size[0], self.input_size[1], 21))
+        result = son_value/mom_value
+        print('son',son_value.shape)
+        result = k_b.reshape(result, (-1, 21, self.input_size[0], self.input_size[1]))
         return result
 
     def compute_output_shape(self, input_shape):
@@ -220,22 +228,98 @@ def gaussian_heat_map(x):
     return Z
 
 
+class DataGenerator(Sequence):
+    def __init__(self, dir_path, batch_size=1, shuffle=True):
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.dir_path = dir_path
+        self.on_epoch_end()
+
+    def __len__(self):
+        return int(np.floor(len(self.dir_path)) // self.batch_size)
+
+    def __getitem__(self, item):
+        indexes = self.indexes[item*self.batch_size:(item+1)*self.batch_size]
+        dir_path = [self.dir_path[i] for i in indexes]
+        return self.__data_generation(dir_path)
+
+    def __data_generation(self, dir_path):
+        image = [io.imread(path+"_color_composed.png") for path in dir_path]
+        crop_param = []
+        joint_3d = []
+        joint_2d = []
+        for path in dir_path:
+            value = open(path+"_crop_params.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            crop_param.append(value)
+
+            value = open(path+"_joint_pos_global.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            joint_3d.append(value)
+
+            value = open(path+"_joint2D.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            joint_2d.append(value)
+
+        return image, crop_param, joint_3d, joint_2d
+
+    def on_epoch_end(self):
+        self.indexes = np.arange(len(self.dir_path))
+        if self.shuffle:
+            np.random.shuffle(self.indexes)
+
+def make_dir_path():
+    pathes = []
+    no_object = "D:\\GANeratedDataset_v3\\GANeratedHands_Release\\data\\noObject"
+    for i in range(1,142):
+        for j in range(1,1025):
+            pathes.append(no_object+"\\{0:04d}\\{1:04d}".format(i,j))
+
+    return pathes
+
+
 if __name__ == "__main__":
-    nope=[100,100]
-    z = gaussian_heat_map(nope)
-    reg = RegNet((256,256,3))
-    reg.model.summary()
-    reg.model.compile(optimizer='adam',loss='mae')
-    input1 = Input(shape=(2, 21, 3))
+    dir_path = make_dir_path()
+    gen = DataGenerator(dir_path,batch_size=1, shuffle=False)
+    image, crop_param, joint_3d, joint_2d = gen.__getitem__(0)
+
+    test = []
+    joint_3d = np.reshape(joint_3d, (1, 21, 3))
+    joint_2d = np.reshape(joint_2d, (1, 21, 2))
+    crop_param = np.reshape(crop_param, (1, 1, 3))
+
+    input1 = Input(shape=(21, 3))
     input2 = Input(shape=(1, 3))
-#    flat = Flatten()(input)
 
-    gaus = ProjLayer((256,256))([input1, input2])
-    print(gaus.shape)
+    gaus = ProjLayer((256, 256))([input1, input2])
 
-    conv = Conv2D(kernel_size=3, filters=256,strides=1,padding='same')(gaus)
+    model = Model(inputs=[input1,input2],outputs=gaus)
 
-    model = Model(inputs=[input1,input2],outputs=conv)
+    p = model.predict(x=[joint_3d, crop_param])
+    for i in range(len(joint_2d[0])):
+
+        test = (gaussian_heat_map(joint_2d[0][i]))
+        io.imshow(p[0, i])
+        io.show()
+
+        plt.imshow(test, cmap='hot', interpolation='nearest')
+        plt.show()
+
+
+
+#     reg = RegNet((256,256,3))
+#     reg.model.summary()
+#     reg.model.compile(optimizer='adam', loss='mae')
+#     input1 = Input(shape=(2, 21, 3))
+#     input2 = Input(shape=(1, 3))
+# #    flat = Flatten()(input)
+#
+#     gaus = ProjLayer((256,256))([input1, input2])
+#     print(gaus.shape)
+#
+#     conv = Conv2D(kernel_size=3, filters=256,strides=1,padding='same')(gaus)
+#
+#     model = Model(inputs=[input1,input2],outputs=conv)
 
 
 # #    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
