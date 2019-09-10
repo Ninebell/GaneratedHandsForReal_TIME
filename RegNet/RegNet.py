@@ -8,6 +8,7 @@
 '''
 import csv
 from skimage import io
+from keras.optimizers import Adam
 from keras.layers import *
 from keras.models import Model
 from keras import backend as k_b
@@ -25,25 +26,79 @@ def change3D_2D(points, crop_param):
     points_2d = ((k[0]/k[2]-crop_param[0])*crop_param[2], (k[1]/k[2]-crop_param[1])*crop_param[2])
     return points_2d
 
+class DataGenerator(Sequence):
+    def __init__(self, dir_path, batch_size=1, shuffle=True):
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.dir_path = dir_path
+        self.on_epoch_end()
+
+    def __len__(self):
+        return int(np.floor(len(self.dir_path)) // self.batch_size)
+
+    def __getitem__(self, item):
+        indexes = self.indexes[item*self.batch_size:(item+1)*self.batch_size]
+        dir_path = [self.dir_path[i] for i in indexes]
+        return self.__data_generation(dir_path)
+
+    def getitem(self):
+
+        for i in range(0,len(self.dir_path)):
+            dir_path = [self.dir_path[j] for j in range(i,self.batch_size + i)]
+            yield self.__data_generation(dir_path)
+        self.on_epoch_end()
+
+    def __data_generation(self, dir_path):
+        image = [io.imread(path+"_color_composed.png") for path in dir_path]
+        image = np.asarray(image, np.float)
+        image = image / 255.0
+        x = []
+        y = []
+        crop_param = []
+        joint_3d = []
+        joint_2d_heatmap = []
+        for path in dir_path:
+            value = open(path+"_crop_params.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            crop_param.append(value)
+
+            value = open(path+"_joint_pos_global.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            joint_3d.append(value)
+
+            value = open(path+"_joint2D.txt").readline().strip('\n').split(',')
+            value = [float(val) for val in value]
+            value = np.asarray(value)
+            value = np.reshape(value, (21, 2))
+            for val in value:
+                heat_map = gaussian_heat_map(val)
+                joint_2d_heatmap.append(heat_map)
+
+        crop_param = np.asarray(crop_param)
+        crop_param = np.reshape(crop_param, (-1, 1, 3))
+
+        joint_3d = np.asarray(joint_3d)
+        joint_3d = np.reshape(joint_3d, (-1,63))
+
+        joint_2d_heatmap = np.asarray(joint_2d_heatmap)
+        joint_2d_heatmap = np.reshape(joint_2d_heatmap, (-1, 21, 256, 256))
+
+        return image, crop_param, joint_3d, joint_2d_heatmap
+
+    def on_epoch_end(self):
+        self.indexes = np.arange(len(self.dir_path))
+        if self.shuffle:
+            np.random.shuffle(self.indexes)
 
 class ProjLayer(Layer):
     def __init__(self, input_size, **kwargs):
         self.input_size = input_size
-        super(ProjLayer, self).__init__(**kwargs)
 
-    def calc_cell_units(self):
-        return self.input_size[0]*self.input_size[1]
-
-    def build(self, input_shape):
         self.ones = k_b.ones((21, self.calc_cell_units(), 2))
-        self.test = self.add_weight(name='test',shape=(21, self.calc_cell_units(), 2),trainable=False,
-                                    initializer=initializers.constant(1))
 
         self.intrinsics = [[617.173, 0, 0.],
                            [0., 617.173, 0],
                            [315.453, 242.256, 1]]
-
-        self.crop_value = []
 
         self.intrinsics_tensor = k_b.ones((3,3))
         k_b.set_value(self.intrinsics_tensor, self.intrinsics)
@@ -55,36 +110,44 @@ class ProjLayer(Layer):
         pair = np.asarray(pair)
         self.back_board = k_b.ones((self.calc_cell_units(), 2))
         k_b.set_value(self.back_board, pair)
+        super(ProjLayer, self).__init__(**kwargs)
 
-        print(self.back_board.shape)
+    def calc_cell_units(self):
+        return self.input_size[0]*self.input_size[1]
+
+    def build(self, input_shape):
         super(ProjLayer, self).build(input_shape)
 
     def call(self, x):
-        joint_3d = x[0]
-        crop_prom = x[1]
-        self.intrinsics_tensor = k_b.transpose(self.intrinsics_tensor)
-        global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)
-        global_joint_2d = k_b.reshape(global_joint_2d, (-1, 21, 3))
-        # return global_joint_2d
-        scale = global_joint_2d[:,:,2]
-        scale = k_b.reshape(scale, (-1,21,1))
-        global_joint_2d = global_joint_2d[:, :, :2] / scale
-        joint_2d = (global_joint_2d - crop_prom[:, :, :2])*crop_prom[:, :, 2]
-        joint_2d = k_b.reshape(joint_2d, (-1, 21, 1, 2))
-        joint_2d_ones = joint_2d * self.test
-        diff = (joint_2d_ones - self.back_board)
+        joint_3d = x[0]             #   -1, 21, 3
+        # print(joint_3d.shape)
+        crop_prom = x[1]            #   -1, 1, 3
+        #
+        # print(crop_prom.shape)
+        global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)     # -1, 21, 3 X 3, 3 = -1, 21, 1, 3
+        global_joint_2d = k_b.reshape(global_joint_2d, [-1, 21, 3])     # -1, 21, 3
+        #
+        scale = global_joint_2d[:,:,2]                                  # -1, 21
+        scale = k_b.reshape(scale, [-1,21,1])                           # -1, 21, 1
+        global_joint_2d = global_joint_2d[:, :, :2] / scale             # -1, 21, 2
+        joint_2d = (global_joint_2d - crop_prom[:, :, :2])   # -1, 21, 2
+        joint_2d = joint_2d * crop_prom[:,:,:2]
+        joint_2d = k_b.reshape(joint_2d, [-1, 21, 1, 2])                # -1, 21, 1, 2
+        joint_2d_ones = joint_2d * self.ones
+        diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
         print(diff.shape)
         fac = k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])
-        print(fac.shape)
         son_value = k_b.exp(-fac/2)
         mom_value = (2*np.pi)
+
         result = son_value/mom_value
-        print('son',son_value.shape)
-        result = k_b.reshape(result, (-1, 21, self.input_size[0], self.input_size[1]))
+        result = k_b.reshape(result, [-1,21,256,256])
         return result
 
     def compute_output_shape(self, input_shape):
-        return (None, self.input_size[0], self.input_size[1], 21)
+        input_a, input_b = input_shape
+        return (input_a[0], 21, 256, 256)
+
 
 
 class RegNet:
@@ -93,20 +156,21 @@ class RegNet:
         self.model = self.__build__()
 
     def __build__(self):
-        self.image_input_layer = Input(self.input_shape)
-        self.crop_param_input_layer = Input(shape=(1,3))
-        res4c = self.__build__resnet__(self.image_input_layer)
-        self.intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
-        projLayer = ProjLayer((256,256))([self.intermediate_3D_position, self.crop_param_input_layer])
+        image_input_layer = Input(self.input_shape)
+        crop_param_input_layer = Input(shape=(1,3))
+        res4c = RegNet.__build__resnet__(image_input_layer)
+        intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
+        print(intermediate_3D_position.shape)
+        projLayer = ProjLayer((256,256), trainable=False)([intermediate_3D_position, crop_param_input_layer])
         conv = RegNet.make_conv(projLayer)
-        output_layer1, output_layer2 = RegNet.make_main_loss(conv)
-        print(self.image_input_layer.shape, self.crop_param_input_layer.shape)
-        print(output_layer1.shape, output_layer2.shape)
-        return Model(inputs=[self.image_input_layer, self.crop_param_input_layer], outputs=[output_layer1, output_layer2])
+        joint_3d_result, heat_map = RegNet.make_main_loss(conv)
+        return Model(inputs=[image_input_layer, crop_param_input_layer],
+                     outputs=[intermediate_3D_position, joint_3d_result, heat_map])
 
-    def __build__resnet__(self, input_layer):
+    @staticmethod
+    def __build__resnet__(input_layer):
         feature = 64
-        conv1 = RegNet.conv_block(7,1,feature,input_layer)
+        conv1 = RegNet.conv_block(7, 1, feature, input_layer)
         max_pool = MaxPooling2D()(conv1)
         res2a = RegNet.residual_block_convolution(1, feature, feature*4, max_pool)
         res2b = RegNet.residual_block_identity_skip(feature, feature*4, res2a)
@@ -129,11 +193,9 @@ class RegNet:
         conv = Conv2D(kernel_size=3, strides=2, filters=1024, padding='same')(conv)
         inner200 = RegNet.inner_product(conv, 200)
         inner3joints = RegNet.inner_product(inner200,3*21,False)
-
-        conv = Conv2D(kernel_size=3, strides=1, filters=21, padding='same',name='heatmaps')(input_layer)
-        # deconv = RegNet.deconv_block(4, 2, 256*256, conv)
-        # deconv = RegNet.deconv_block(4, 2, 256*256, deconv, True)
-        return conv, inner3joints
+        inner3joints = Reshape((21, 3))(inner3joints)
+        heat_map = Conv2D(kernel_size=3, strides=1, filters=256, padding='same',name='heatmaps')(input_layer)
+        return inner3joints, heat_map
 
     @staticmethod
     def make_conv(input_layer):
@@ -193,8 +255,8 @@ class RegNet:
     @staticmethod
     def make_intermediate_3D_position(input_layer):
         inner = RegNet.inner_product(input_layer, 3*21)
-        inner = Reshape((21, 3), input_shape=inner.shape)(inner)
-        return inner
+        reshape_block = Reshape(target_shape=(21, 3))(inner)
+        return reshape_block
 
 def multivariate_gaussian(pos, mu, Sigma):
     """
@@ -227,129 +289,88 @@ def gaussian_heat_map(x):
     Z = multivariate_gaussian(pos, mu, Sigma)
     return Z
 
-
-class DataGenerator(Sequence):
-    def __init__(self, dir_path, batch_size=1, shuffle=True):
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.dir_path = dir_path
-        self.on_epoch_end()
-
-    def __len__(self):
-        return int(np.floor(len(self.dir_path)) // self.batch_size)
-
-    def __getitem__(self, item):
-        indexes = self.indexes[item*self.batch_size:(item+1)*self.batch_size]
-        dir_path = [self.dir_path[i] for i in indexes]
-        return self.__data_generation(dir_path)
-
-    def __data_generation(self, dir_path):
-        image = [io.imread(path+"_color_composed.png") for path in dir_path]
-        crop_param = []
-        joint_3d = []
-        joint_2d = []
-        for path in dir_path:
-            value = open(path+"_crop_params.txt").readline().strip('\n').split(',')
-            value = [float(val) for val in value]
-            crop_param.append(value)
-
-            value = open(path+"_joint_pos_global.txt").readline().strip('\n').split(',')
-            value = [float(val) for val in value]
-            joint_3d.append(value)
-
-            value = open(path+"_joint2D.txt").readline().strip('\n').split(',')
-            value = [float(val) for val in value]
-            joint_2d.append(value)
-
-        return image, crop_param, joint_3d, joint_2d
-
-    def on_epoch_end(self):
-        self.indexes = np.arange(len(self.dir_path))
-        if self.shuffle:
-            np.random.shuffle(self.indexes)
-
 def make_dir_path():
     pathes = []
     no_object = "D:\\GANeratedDataset_v3\\GANeratedHands_Release\\data\\noObject"
-    for i in range(1,142):
-        for j in range(1,1025):
-            pathes.append(no_object+"\\{0:04d}\\{1:04d}".format(i,j))
+    for i in range(1,141):
+        end = 1025
+        if i == 69:
+            end = 217
+        for j in range(1,end):
+            pathes.append(no_object +"\\{0:04d}\\{1:04d}".format(i,j))
+    with_object = "D:\\GANeratedDataset_v3\\GANeratedHands_Release\\data\\withObject"
+    for i in range(1, 184):
+        end = 1025
+        if i == 92:
+            end = 477
+        for j in range(1, end):
+
+            pathes.append(with_object + "\\{0:04d}\\{1:04d}".format(i, j))
 
     return pathes
 
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     dir_path = make_dir_path()
-    gen = DataGenerator(dir_path,batch_size=1, shuffle=False)
-    image, crop_param, joint_3d, joint_2d = gen.__getitem__(0)
-
-    test = []
-    joint_3d = np.reshape(joint_3d, (1, 21, 3))
-    joint_2d = np.reshape(joint_2d, (1, 21, 2))
-    crop_param = np.reshape(crop_param, (1, 1, 3))
-
+    gen = DataGenerator(dir_path, batch_size=2, shuffle=False)
     input1 = Input(shape=(21, 3))
     input2 = Input(shape=(1, 3))
+    # res4c = RegNet.__build__resnet__(input1)
+#    intermediate = RegNet.make_intermediate_3D_position(res4c)
+    gaus = ProjLayer([256, 256])([input1, input2])
+    # conv = RegNet.make_conv(gaus)
+    # joint3d, heat_map = RegNet.make_main_loss(conv)
+    model = Model(inputs=[input1, input2], outputs=[gaus])
+    model.summary()
 
-    gaus = ProjLayer((256, 256))([input1, input2])
+    model.compile(loss=['mean_squared_error'], metrics=['accuracy'], optimizer=Adam(lr=1e-4))
 
-    model = Model(inputs=[input1,input2],outputs=gaus)
+    i = 1
+    for image, crop_param, joint_3d, joint_2d in gen.getitem():
+        joint_3d = np.reshape(joint_3d, (-1, 21, 3))
+        joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
+        crop_param = np.reshape(crop_param, (-1, 1, 3))
 
-    p = model.predict(x=[joint_3d, crop_param])
+        # p = model.predict(x=[joint_3d, crop_param])
+        # io.imshow(p[0,0])
+        # io.show()
+
+        p = model.train_on_batch(x=[joint_3d, crop_param], y=[joint_2d])
+        print(i, p)
+        i = i + 1
+
     for i in range(len(joint_2d[0])):
 
-        test = (gaussian_heat_map(joint_2d[0][i]))
+        #test = (gaussian_heat_map(joint_2d[0][i]))
         io.imshow(p[0, i])
         io.show()
 
-        plt.imshow(test, cmap='hot', interpolation='nearest')
+        plt.imshow(joint_2d[0][i], cmap='hot', interpolation='nearest')
         plt.show()
 
 
+if __name__ == "__main__":
+    pathes = make_dir_path()
+    np.random.shuffle(pathes)
+    path_len = len(pathes)
+    train_data = pathes[:path_len//10*8]
+    test_data = pathes[path_len//10*8:]
+    train_gen = DataGenerator(dir_path=train_data, batch_size=2)
+    test_gen = DataGenerator(dir_path=test_data)
 
-#     reg = RegNet((256,256,3))
-#     reg.model.summary()
-#     reg.model.compile(optimizer='adam', loss='mae')
-#     input1 = Input(shape=(2, 21, 3))
-#     input2 = Input(shape=(1, 3))
-# #    flat = Flatten()(input)
-#
-#     gaus = ProjLayer((256,256))([input1, input2])
-#     print(gaus.shape)
-#
-#     conv = Conv2D(kernel_size=3, filters=256,strides=1,padding='same')(gaus)
-#
-#     model = Model(inputs=[input1,input2],outputs=conv)
+    regNet = RegNet(input_shape=(256, 256, 3))
+    optimizer = Adam(lr=1e-4)
+    regNet.model.compile(optimizer=optimizer,
+                         loss=['mean_squared_error',
+                               'mean_squared_error',
+                               'mean_squared_error'],
+                         )
+    regNet.model.summary()
+    idx = 0
+    for image, crop_param, joint_3d, joint_2d in train_gen.getitem():
+        joint_3d = np.reshape(joint_3d, (-1, 21, 3))
+        joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
+        crop_param = np.reshape(crop_param, (-1, 1, 3))
+        result = regNet.model.train_on_batch(x=[image, crop_param], y=[joint_3d, joint_3d, joint_2d])
+        print(result)
 
-
-# #    conv = Conv2D(filters=1, kernel_size=2, strides=1, padding='valid',trainable=False)(input)
-#
-#     model = Model(inputs=[input1], outputs=[gaus])
-#
-#     model.compile(optimizer='adam',loss="mae")
-#     x = [[-54.176, 7.2007, 375.21]]
-#     crop = [[217.71, 121.36, 0.84725]]
-#     x = np.asarray(x, dtype=np.float32)
-#     x = np.reshape(x, (1,1,3))
-#     crop = np.asarray(crop, dtype=np.float32)
-#     crop = np.reshape(crop, (1, 1, 3))
-# #    x = np.reshape(x, (-1, 2, 3))
-#     y = np.arange(1, 256 * 256 + 1, 1)
-#     y = np.arange(1,256*256+1,1)
-#     y = np.reshape(y, (256, 256))
-#     ys = []
-#     ys.append(y)
-#     ys.append(y)
-#     ys.append(y)
-#     ys.append(y)
-#     ys = np.asarray(ys)
-#
-#     model.summary()
-#     y = model.predict(x=[x, crop])
-#
-#     print("***************************************************************")
-#     print(y[0])
-#     print("***************************************************************")
-#     points = [-54.176, 7.2007, 375.21]
-#     crop_param = [217.71,121.36,0.84725]
-#     print(gaussian_heat_map((7.6291,112.74)))
+    regNet.model.summary()
