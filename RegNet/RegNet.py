@@ -8,6 +8,9 @@
 '''
 import csv
 from scipy import io
+import cv2
+import time
+import os
 from PIL import Image
 from keras.optimizers import Adam
 from keras.layers import *
@@ -106,19 +109,14 @@ class Length2Rate(Layer):
 
     def call(self, x):
         w = x[:,0]
-        print(w.shape)
         m0 = x[:,9]
-        print(m0.shape)
         distance = k_b.square(w - m0)
-        print('dist', distance.shape)
 #        distance = k_b.sqrt(k_b.sum(distance, axis=0))
         distance = k_b.sqrt(distance[:,0] + distance[:,1] + distance[:,2])
         distance = k_b.reshape(distance, (-1, 1))
-        print('dist', distance.shape)
         distance = k_b.repeat(distance, 21)
         m0 = k_b.repeat(m0, 21)
         result = (x-m0)/distance
-        print(result.shape)
         return result
 
     def compute_output_shape(self, input_shape):
@@ -154,10 +152,8 @@ class ProjLayer(Layer):
 
     def call(self, x):
         joint_3d = x[0]             #   -1, 21, 3
-        # print(joint_3d.shape)
         crop_prom = x[1]            #   -1, 1, 3
         #
-        # print(crop_prom.shape)
 
         global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)     # -1, 21, 3 X 3, 3 = -1, 21, 1, 3
         global_joint_2d = k_b.reshape(global_joint_2d, [-1, 21, 3])     # -1, 21, 3
@@ -172,16 +168,16 @@ class ProjLayer(Layer):
 
         b = k_b.repeat(crop_prom[:,:,2],2)
         b = k_b.reshape(b, [-1,1,2])
-        print('b', b.shape)
-        joint_2d = joint_2d * b #crop_prom[:,:,:2]
+        joint_2d = joint_2d * b
 
         joint_2d = k_b.reshape(joint_2d, [-1, 21, 1, 2])                # -1, 21, 1, 2
         joint_2d_ones = joint_2d * self.ones
+
         diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
-        print(diff.shape)
-        fac = k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])
+        coeff = 50.0
+        fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / coeff
         son_value = k_b.exp(-fac/2)
-        mom_value = (2*np.pi)
+        mom_value = (2*np.pi) * coeff
 
         result = son_value/mom_value
         result = k_b.reshape(result, [-1,21,256,256])
@@ -194,6 +190,8 @@ class ProjLayer(Layer):
 
 
 class RegNet:
+    residual_conv_index=1
+    residual_skip_index=1
     def __init__(self, input_shape):
         self.input_shape = input_shape
         self.model = self.__build__()
@@ -206,33 +204,104 @@ class RegNet:
         intermediate_3D_rate = Length2Rate(name='intermediate_3D')(intermediate_3D_position)
         projLayer = ProjLayer((256,256), trainable=False)([intermediate_3D_position, crop_param_input_layer])
 
-        projLayer = Conv2D(filters=256, kernel_size=3, strides=2, padding='same')(projLayer)
-        projLayer = Conv2D(filters=512, kernel_size=3, strides=2, padding='same')(projLayer)
-        projLayer = Conv2D(filters=1024, kernel_size=3, strides=2, padding='same')(projLayer)
+        # projLayer_conv = Conv2D(filters=256, kernel_size=3, strides=2, padding='same')(projLayer)
+        # projLayer_conv = Conv2D(filters=512, kernel_size=3, strides=2, padding='same')(projLayer_conv)
+        # projLayer_conv = Conv2D(filters=1024, kernel_size=3, strides=2, padding='same')(projLayer_conv)
+        max_pool = MaxPool2D()(projLayer)
+        max_pool = MaxPool2D()(max_pool)
+        max_pool = MaxPool2D()(max_pool)
 
-        concat = concatenate([projLayer,res4c], axis=1)
+        concat = concatenate([max_pool, res4c], axis=1)
         conv = RegNet.make_conv(concat)
         joint_3d_result, heat_map = RegNet.make_main_loss(conv)
         return Model(inputs=[image_input_layer, crop_param_input_layer],
-                     outputs=[intermediate_3D_rate, joint_3d_result, heat_map])
+                     outputs=[projLayer, intermediate_3D_rate, joint_3d_result, heat_map])
+
+    def train_on_batch(self, train_generator, test_generator):
+        steps = train_gen.__len__()
+
+        idx = 0
+        test_idx = 1
+        for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_generator.getitem():
+            start_time = time.time()
+
+            joint_3d = np.reshape(joint_3d, (-1, 21, 3))
+            joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 3))
+            joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
+            crop_param = np.reshape(crop_param, (-1, 1, 3))
+            result = self.model.train_on_batch(x=[image, crop_param],
+                                               y=[joint_2d, joint_3d_rate, joint_3d_rate, joint_2d])
+
+            spend_time = time.time() - start_time
+            rest = steps-idx
+            print('{0}/{1}'.format(idx, steps),
+                  result,
+                  "rest: {0:.2f}".format(spend_time * rest))
+
+            idx = (idx + 1) % steps
+
+            if idx % (steps//1000) == 1:
+                self.test_on_batch(test_generator, test_idx)
+                test_idx += 1
+
+    def test_on_batch(self, test_generator, epoch):
+        steps = train_gen.__len__()
+        root = "D:\\RegNet\\result\\{0}".format(epoch)
+        os.makedirs(root, exist_ok=True)
+        idx = 0
+        for image, crop_param, joint_3d, joint_3d_rate, joint_2d in test_generator.getitem():
+            crop_param = np.reshape(crop_param, (-1, 1, 3))
+
+            result = self.model.predict_on_batch(x=[image, crop_param])
+
+
+            print(result[0])
+            joint = result[3][0][0]
+            for t in result[3][0]:
+                joint += t
+
+            joint *= 255
+
+            heat_map = result[0][0][0]
+            for k in result[0][0]:
+                heat_map += k
+
+            plt.imshow(heat_map, cmap='hot', interpolation='nearest')
+            plt.show()
+            heat_map *= 255
+            image = np.moveaxis(image[0], 0, 2)
+            print('joint', np.sum(joint), )
+            print('heat_map', np.sum(heat_map))
+            cv2.imwrite(root+"\\heat_map_{0}.png".format(idx), heat_map)
+            cv2.imwrite(root+"\\joint_{0}.png".format(idx), joint)
+            plt.imsave(root+"\\image_{0}.png".format(idx), image)
+
+            idx = (idx + 1) % steps
 
     @staticmethod
     def __build__resnet__(input_layer):
         feature = 64
+        length = 128
         conv1 = RegNet.conv_block(7, 1, feature, input_layer)
         max_pool = MaxPooling2D()(conv1)
-        res2a = RegNet.residual_block_convolution(1, feature, feature*4, max_pool)
-        res2b = RegNet.residual_block_identity_skip(feature, feature*4, res2a)
-        res2c = RegNet.residual_block_identity_skip(feature, feature*4, res2b)
+        print(max_pool.shape)
+        # res2a = RegNet.residual_block_convolution(1, feature, feature*4, max_pool)
+        res2a = RegNet.residual_block_convolution(1, feature, feature*4, feature, length)(max_pool)
+        res2b = RegNet.residual_block_identity_skip(feature, feature*4, length)(res2a)
+        res2c = RegNet.residual_block_identity_skip(feature, feature*4, length)(res2b)
 
-        res3a = RegNet.residual_block_convolution(2, feature*2, feature*8, res2c)
-        res3b = RegNet.residual_block_identity_skip(feature*2, feature*8, res3a)
-        res3c = RegNet.residual_block_identity_skip(feature*2, feature*8, res3b)
+        # res3a = RegNet.residual_block_convolution(2, feature*2, feature*8, res2c)
 
-        res4a = RegNet.residual_block_convolution(2, feature*4, feature*16, res3c)
-        res4b = RegNet.residual_block_identity_skip(feature*4, feature*16, res4a)
-        res4c = RegNet.residual_block_identity_skip(feature*4, feature*16, res4b)
-        res4d = RegNet.residual_block_identity_skip(feature*4, feature*16, res4c)
+        print(res2c.shape)
+        res3a = RegNet.residual_block_convolution(2, feature*2, feature*8, feature*4, length)(res2c)
+        res3b = RegNet.residual_block_identity_skip(feature*2, feature*8, length/2)(res3a)
+        res3c = RegNet.residual_block_identity_skip(feature*2, feature*8, length/2)(res3b)
+
+        # res4a = RegNet.residual_block_convolution(2, feature*4, feature*16, res3c)
+        res4a = RegNet.residual_block_convolution(2, feature*4, feature*16, feature*8, length/2)(res3c)
+        res4b = RegNet.residual_block_identity_skip(feature*4, feature*16, length/4)(res4a)
+        res4c = RegNet.residual_block_identity_skip(feature*4, feature*16, length/4)(res4b)
+        res4d = RegNet.residual_block_identity_skip(feature*4, feature*16, length/4)(res4c)
         return res4d
 
     @staticmethod
@@ -244,9 +313,10 @@ class RegNet:
         conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same')(UpSampling2D()(conv))
         # max_pool = MaxPooling2D()(conv)
         inner200 = RegNet.inner_product(input_layer, 200)
-        inner3joints = RegNet.inner_product(inner200,3*21, 'tanh', False)
+        inner3joints = RegNet.inner_product(inner200,3*21,flatten=False)
         inner3joints = Reshape((21, 3), name='inner3joints')(inner3joints)
-        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same',name='heatmaps', activation='sigmoid')(conv)
+        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same')(conv)
+        heat_map = Softmax(name='heat_map')(heat_map)
         return inner3joints, heat_map
 
     @staticmethod
@@ -268,7 +338,8 @@ class RegNet:
         return batch
 
     @staticmethod
-    def residual_block_identity_skip(f1, f2, input_layer):
+    def residual_block_identity_skip(f1, f2, length):
+        input_layer = Input((f2, length, length))
         conv = RegNet.conv_block(1, 1, f1, input_layer)
         relu = ReLU()(conv)
         conv = RegNet.conv_block(3, 1, f1, relu)
@@ -278,10 +349,13 @@ class RegNet:
         # Actually, In paper I have to use Eltwise SUM. But I don't know about it.
         add = Add()([input_layer, conv])
         relu = ReLU()(add)
-        return relu
+        model = Model(inputs=input_layer, outputs=relu, name='res_block_identity_{0}'.format(RegNet.residual_skip_index))
+        RegNet.residual_skip_index += 1
+        return model
 
     @staticmethod
-    def residual_block_convolution(s, f1, f2, input_layer):
+    def residual_block_convolution(s, f1, f2, f3, length):
+        input_layer = Input((f3, length, length))
         conv1 = RegNet.conv_block(1, s, f1, input_layer)
         relu = ReLU()(conv1)
         conv1 = RegNet.conv_block(3, 1, f1, relu)
@@ -292,7 +366,11 @@ class RegNet:
         conv2 = RegNet.conv_block(1, s, f2, input_layer)
         add = Add()([conv2, conv1])
         relu = ReLU()(add)
-        return relu
+        print('input', input_layer.shape)
+        print('output', relu.shape)
+        model = Model(inputs=input_layer, outputs=relu, name='res_block_conv_{0}'.format(RegNet.residual_conv_index))
+        RegNet.residual_conv_index += 1
+        return model
 
 #    |      Caffe        |          Keras            |
 #    |    InnerProduct   |       Fully-Connected     |
@@ -309,6 +387,7 @@ class RegNet:
         inner = RegNet.inner_product(input_layer, 3*21)
         reshape_block = Reshape(target_shape=(21, 3))(inner)
         return reshape_block
+
 
 def multivariate_gaussian(pos, mu, Sigma):
     """
@@ -331,7 +410,7 @@ def gaussian_heat_map(x):
     Y = np.linspace(0, 255, N)
     X, Y = np.meshgrid(X, Y)
     mu = np.array([x[0], x[1]])
-    Sigma = np.array([[ 1.0 , 0.], [0.,  1.]])
+    Sigma = np.array([[ 10.0 , 0.], [0.,  10.]])
 
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))
@@ -343,7 +422,8 @@ def gaussian_heat_map(x):
 
 def make_dir_path():
     pathes = []
-    root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
+    # root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
+    root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
     no_object = root_path + "\\data\\noObject"
     for i in range(1,141):
         end = 1025
@@ -373,32 +453,55 @@ if __name__ == "__main__e":
     rate = Length2Rate()(input1)
     # conv = RegNet.make_conv(gaus)
     # joint3d, heat_map = RegNet.make_main_loss(conv)
-    model = Model(inputs=[input1, input2], outputs=[rate])
+    model = Model(inputs=[input1, input2], outputs=[gaus])
     model.summary()
 
-    model.compile(loss=['mean_squared_error'], metrics=['accuracy'], optimizer=Adam(lr=1e-4))
+    model.compile(loss=['mse'], metrics=['mse'], optimizer=Adam(lr=1e-4))
 
     i = 1
     for image, crop_param, joint_3d, joint_3d_rate, joint_2d in gen.getitem():
         joint_3d = np.reshape(joint_3d, (-1, 21, 3))
         joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 3))
-        joint_2d = np.reshape(joint_2d, (-1, 21, 2))
+        joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
         crop_param = np.reshape(crop_param, (-1, 1, 3))
 
-        p = model.train_on_batch(x=[joint_3d, crop_param], y=[joint_3d_rate])
-        p = model.predict(x=[joint_3d, crop_param])
-        print(p.shape)
+        print(joint_3d.shape)
+        print(crop_param.shape)
+        p = model.train_on_batch(x=[joint_3d, crop_param], y=[joint_2d])
         print(p)
-        # io.imshow(p[0,0])
-        # io.show()
+        pre = model.predict(x=[joint_3d, crop_param])
 
+
+        img = pre[0][0]
+        for i in pre[0]:
+            img += i
+        img = img * 255
+
+        # image = image
+        cv2.imshow("image", img)
+        cv2.waitKey(10)
         i = i + 1
 
-    for i in range(len(joint_2d[0])):
-        #test = (gaussian_heat_map(joint_2d[0][i]))
+    for image, crop_param, joint_3d, joint_3d_rate, joint_2d in gen.getitem():
 
-        plt.imshow(joint_2d[0][i], cmap='hot', interpolation='nearest')
-        plt.show()
+        joint= joint_2d[0][0]
+        for t in joint_2d[0]:
+            joint += t
+
+        print(np.sum(joint))
+
+        test = plt.imshow(joint, cmap='hot', interpolation='nearest')
+        print(type(test))
+
+        image = np.moveaxis(image[0], 0, 2)
+        image = image * 255
+
+        # image = image
+        cv2.imshow("image", image)
+        cv2.waitKey(10)
+        # plt.imsave("img.png",image)
+        # plt.imsave("joint.png",joint)
+        # plt.show()
 
 
 if __name__ == "__main__":
@@ -406,8 +509,8 @@ if __name__ == "__main__":
     pathes = make_dir_path()
     np.random.shuffle(pathes)
     path_len = len(pathes)
-    train_data = pathes[:path_len//10*8]
-    test_data = pathes[path_len//10*8:]
+    train_data = pathes[:-200]
+    test_data = pathes[-200:]
     train_gen = DataGenerator(dir_path=train_data, batch_size=2)
     test_gen = DataGenerator(dir_path=test_data)
 
@@ -416,25 +519,18 @@ if __name__ == "__main__":
     regNet.model.compile(optimizer=optimizer,
                          loss=['mse',
                                'mse',
+                               'mse',
                                'mse'],
-                         loss_weights=[100,
+                         loss_weights=[1,
+                                       100,
                                        100,
                                        1],
                          metrics=['mse']
                          )
     regNet.model.summary()
     plot_model(regNet.model, to_file='model.png')
+
     print(regNet.model.metrics_names)
-    idx = 0
 
-    for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_gen.getitem():
-        joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 3))
-        joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
-        crop_param = np.reshape(crop_param, (-1, 1, 3))
-        result = regNet.model.train_on_batch(x=[image, crop_param], y=[joint_3d_rate, joint_3d_rate, joint_2d])
+    regNet.train_on_batch(train_gen, test_gen)
 
-        print('{0}/{1}'.format(idx, train_gen.__len__()), result)
-
-        idx = (idx + 1)%train_gen.__len__()
-
-    regNet.model.summary()

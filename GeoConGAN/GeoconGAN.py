@@ -5,7 +5,7 @@ import cv2
 from GeoConGAN.CycleGAN.model import CycleGAN
 from keras.optimizers import Adam
 from keras.layers import Input
-from keras.models import  Model
+from keras.models import Model
 from GeoConGAN.ImagePreprocess import HandImageGenerator, np2cv
 
 class GeoConGAN:
