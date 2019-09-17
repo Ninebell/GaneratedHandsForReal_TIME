@@ -111,7 +111,6 @@ class Length2Rate(Layer):
         w = x[:,0]
         m0 = x[:,9]
         distance = k_b.square(w - m0)
-#        distance = k_b.sqrt(k_b.sum(distance, axis=0))
         distance = k_b.sqrt(distance[:,0] + distance[:,1] + distance[:,2])
         distance = k_b.reshape(distance, (-1, 1))
         distance = k_b.repeat(distance, 21)
@@ -132,7 +131,7 @@ class ProjLayer(Layer):
                            [0., 617.173, 0],
                            [315.453, 242.256, 1]]
 
-        self.intrinsics_tensor = k_b.ones((3,3))
+        self.intrinsics_tensor = k_b.ones((3,3), dtype='float32')
         k_b.set_value(self.intrinsics_tensor, self.intrinsics)
         self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor, (1, 3, 3))
 
@@ -174,10 +173,10 @@ class ProjLayer(Layer):
         joint_2d_ones = joint_2d * self.ones
 
         diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
-        coeff = 50.0
+        coeff = 100.0
         fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / coeff
-        son_value = k_b.exp(-fac/2)
-        mom_value = (2*np.pi) * coeff
+        son_value = k_b.exp(-fac/2.0)
+        mom_value = (2.0*np.pi) * coeff
 
         result = son_value/mom_value
         result = k_b.reshape(result, [-1,21,256,256])
@@ -218,7 +217,7 @@ class RegNet:
                      outputs=[projLayer, intermediate_3D_rate, joint_3d_result, heat_map])
 
     def train_on_batch(self, train_generator, test_generator):
-        steps = train_gen.__len__()
+        steps = train_generator.__len__()
 
         idx = 0
         test_idx = 1
@@ -240,12 +239,11 @@ class RegNet:
 
             idx = (idx + 1) % steps
 
-            if idx % (steps//1000) == 1:
+            if idx % (steps//100) == 1:
                 self.test_on_batch(test_generator, test_idx)
                 test_idx += 1
 
     def test_on_batch(self, test_generator, epoch):
-        steps = train_gen.__len__()
         root = "D:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0
@@ -266,17 +264,18 @@ class RegNet:
             for k in result[0][0]:
                 heat_map += k
 
-            plt.imshow(heat_map, cmap='hot', interpolation='nearest')
-            plt.show()
             heat_map *= 255
             image = np.moveaxis(image[0], 0, 2)
             print('joint', np.sum(joint), )
             print('heat_map', np.sum(heat_map))
             cv2.imwrite(root+"\\heat_map_{0}.png".format(idx), heat_map)
             cv2.imwrite(root+"\\joint_{0}.png".format(idx), joint)
+            cv2.imshow("intermediate", heat_map)
+            cv2.imshow("final", joint)
             plt.imsave(root+"\\image_{0}.png".format(idx), image)
+            cv2.waitKey(1)
 
-            idx = (idx + 1) % steps
+            idx = (idx + 1)
 
     @staticmethod
     def __build__resnet__(input_layer):
@@ -326,12 +325,8 @@ class RegNet:
         return conv4f
 
     @staticmethod
-    def deconv_block(k, s, fm, input_layer, fixed=False):
-        return Deconv2D(filters=fm, kernel_size=k, strides=s, padding='same')(input_layer)
-
-    @staticmethod
     def conv_block(k, s, f, input_layer):
-        conv = Conv2D(kernel_size=k, strides=s, filters=f, padding='same')(input_layer)
+        conv = Conv2D(kernel_size=k, strides=s, filters=f, padding='same', dtype='float32')(input_layer)
         batch = BatchNormalization()(conv)
         # To - Do
         # I need to apply Scale
@@ -441,96 +436,3 @@ def make_dir_path():
             pathes.append(with_object + "\\{0:04d}\\{1:04d}".format(i, j))
 
     return pathes
-
-if __name__ == "__main__e":
-    dir_path = make_dir_path()
-    gen = DataGenerator(dir_path, batch_size=2, shuffle=False)
-    input1 = Input(shape=(21, 3))
-    input2 = Input(shape=(1, 3))
-    # res4c = RegNet.__build__resnet__(input1)
-#    intermediate = RegNet.make_intermediate_3D_position(res4c)
-    gaus = ProjLayer([256, 256])([input1, input2])
-    rate = Length2Rate()(input1)
-    # conv = RegNet.make_conv(gaus)
-    # joint3d, heat_map = RegNet.make_main_loss(conv)
-    model = Model(inputs=[input1, input2], outputs=[gaus])
-    model.summary()
-
-    model.compile(loss=['mse'], metrics=['mse'], optimizer=Adam(lr=1e-4))
-
-    i = 1
-    for image, crop_param, joint_3d, joint_3d_rate, joint_2d in gen.getitem():
-        joint_3d = np.reshape(joint_3d, (-1, 21, 3))
-        joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 3))
-        joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
-        crop_param = np.reshape(crop_param, (-1, 1, 3))
-
-        print(joint_3d.shape)
-        print(crop_param.shape)
-        p = model.train_on_batch(x=[joint_3d, crop_param], y=[joint_2d])
-        print(p)
-        pre = model.predict(x=[joint_3d, crop_param])
-
-
-        img = pre[0][0]
-        for i in pre[0]:
-            img += i
-        img = img * 255
-
-        # image = image
-        cv2.imshow("image", img)
-        cv2.waitKey(10)
-        i = i + 1
-
-    for image, crop_param, joint_3d, joint_3d_rate, joint_2d in gen.getitem():
-
-        joint= joint_2d[0][0]
-        for t in joint_2d[0]:
-            joint += t
-
-        print(np.sum(joint))
-
-        test = plt.imshow(joint, cmap='hot', interpolation='nearest')
-        print(type(test))
-
-        image = np.moveaxis(image[0], 0, 2)
-        image = image * 255
-
-        # image = image
-        cv2.imshow("image", image)
-        cv2.waitKey(10)
-        # plt.imsave("img.png",image)
-        # plt.imsave("joint.png",joint)
-        # plt.show()
-
-
-if __name__ == "__main__":
-    k_b.set_image_data_format('channels_first')
-    pathes = make_dir_path()
-    np.random.shuffle(pathes)
-    path_len = len(pathes)
-    train_data = pathes[:-200]
-    test_data = pathes[-200:]
-    train_gen = DataGenerator(dir_path=train_data, batch_size=2)
-    test_gen = DataGenerator(dir_path=test_data)
-
-    regNet = RegNet(input_shape=(3, 256, 256))
-    optimizer = Adam(lr=1e-4)
-    regNet.model.compile(optimizer=optimizer,
-                         loss=['mse',
-                               'mse',
-                               'mse',
-                               'mse'],
-                         loss_weights=[1,
-                                       100,
-                                       100,
-                                       1],
-                         metrics=['mse']
-                         )
-    regNet.model.summary()
-    plot_model(regNet.model, to_file='model.png')
-
-    print(regNet.model.metrics_names)
-
-    regNet.train_on_batch(train_gen, test_gen)
-
