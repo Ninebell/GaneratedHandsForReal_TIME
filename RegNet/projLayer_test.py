@@ -2,7 +2,7 @@ from RegNet.regnet import *
 
 if __name__ == "__main__":
     dir_path = make_dir_path()
-    gen = DataGenerator(dir_path, batch_size=2, shuffle=False)
+    gen = DataGenerator(dir_path, batch_size=1, shuffle=False)
     input1 = Input(shape=(21, 3))
     input2 = Input(shape=(1, 3))
     # res4c = RegNet.__build__resnet__(input1)

@@ -14,10 +14,8 @@ if __name__ == "__main__":
     regNet.model.compile(optimizer=optimizer,
                          loss=['mse',
                                'mse',
-                               'mse',
                                'mse'],
-                         loss_weights=[1,
-                                       100,
+                         loss_weights=[100,
                                        100,
                                        1],
                          metrics=['mse']

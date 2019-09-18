@@ -173,10 +173,10 @@ class ProjLayer(Layer):
         joint_2d_ones = joint_2d * self.ones
 
         diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
-        coeff = 100.0
-        fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / coeff
+        coeff = 10.0
+        fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / (coeff)
         son_value = k_b.exp(-fac/2.0)
-        mom_value = (2.0*np.pi) * coeff
+        mom_value = (2.0*np.pi) * (coeff)
 
         result = son_value/mom_value
         result = k_b.reshape(result, [-1,21,256,256])
@@ -214,7 +214,7 @@ class RegNet:
         conv = RegNet.make_conv(concat)
         joint_3d_result, heat_map = RegNet.make_main_loss(conv)
         return Model(inputs=[image_input_layer, crop_param_input_layer],
-                     outputs=[projLayer, intermediate_3D_rate, joint_3d_result, heat_map])
+                     outputs=[intermediate_3D_rate, joint_3d_result, heat_map])
 
     def train_on_batch(self, train_generator, test_generator):
         steps = train_generator.__len__()
@@ -229,7 +229,7 @@ class RegNet:
             joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
             crop_param = np.reshape(crop_param, (-1, 1, 3))
             result = self.model.train_on_batch(x=[image, crop_param],
-                                               y=[joint_2d, joint_3d_rate, joint_3d_rate, joint_2d])
+                                               y=[joint_3d_rate, joint_3d_rate, joint_2d])
 
             spend_time = time.time() - start_time
             rest = steps-idx
@@ -252,28 +252,18 @@ class RegNet:
 
             result = self.model.predict_on_batch(x=[image, crop_param])
 
-
-            print(result[0])
-            joint = result[3][0][0]
-            for t in result[3][0]:
+            joint = result[2][0][0]
+            for t in result[2][0]:
                 joint += t
 
             joint *= 255
 
-            heat_map = result[0][0][0]
-            for k in result[0][0]:
-                heat_map += k
-
-            heat_map *= 255
             image = np.moveaxis(image[0], 0, 2)
             print('joint', np.sum(joint), )
-            print('heat_map', np.sum(heat_map))
-            cv2.imwrite(root+"\\heat_map_{0}.png".format(idx), heat_map)
             cv2.imwrite(root+"\\joint_{0}.png".format(idx), joint)
-            cv2.imshow("intermediate", heat_map)
             cv2.imshow("final", joint)
             plt.imsave(root+"\\image_{0}.png".format(idx), image)
-            cv2.waitKey(1)
+            cv2.waitKey(10)
 
             idx = (idx + 1)
 
