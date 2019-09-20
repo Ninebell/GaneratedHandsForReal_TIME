@@ -6,17 +6,15 @@
                    ▼                                                                                       ▼
                 ground truth    (L2 loss)                                                               (L2 loss)
 '''
-import csv
-from scipy import io
 import cv2
 import time
 import os
 from PIL import Image
-from keras.optimizers import Adam
 from keras.layers import *
 from keras.models import Model
 from keras import backend as k_b
 from keras.utils import Sequence, plot_model
+from RegNet.projLayer import *
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -120,72 +118,72 @@ class Length2Rate(Layer):
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[1], input_shape[2])
-
-class ProjLayer(Layer):
-    def __init__(self, output_shape, **kwargs):
-        self.output_size = output_shape
-
-        self.ones = k_b.ones((21, self.calc_cell_units(), 2))
-
-        self.intrinsics = [[617.173, 0, 0.],
-                           [0., 617.173, 0],
-                           [315.453, 242.256, 1]]
-
-        self.intrinsics_tensor = k_b.ones((3,3), dtype='float32')
-        k_b.set_value(self.intrinsics_tensor, self.intrinsics)
-        self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor, (1, 3, 3))
-
-        pair = []
-        for i in range(0, self.calc_cell_units()):
-            pair.append((i%self.output_size[0], i//self.output_size[1]))
-        pair = np.asarray(pair)
-        self.back_board = k_b.ones((self.calc_cell_units(), 2))
-        k_b.set_value(self.back_board, pair)
-        super(ProjLayer, self).__init__(**kwargs)
-
-    def calc_cell_units(self):
-        return self.output_size[0]*self.output_size[1]
-
-    def build(self, input_shape):
-        super(ProjLayer, self).build(input_shape)
-
-    def call(self, x):
-        joint_3d = x[0]             #   -1, 21, 3
-        crop_prom = x[1]            #   -1, 1, 3
-        #
-
-        global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)     # -1, 21, 3 X 3, 3 = -1, 21, 1, 3
-        global_joint_2d = k_b.reshape(global_joint_2d, [-1, 21, 3])     # -1, 21, 3
-
-        #
-        scale = global_joint_2d[:,:,2]                                  # -1, 21
-        scale = k_b.reshape(scale, [-1,21,1])                           # -1, 21, 1
-
-        global_joint_2d = global_joint_2d[:, :, :2] / scale             # -1, 21, 2
-
-        joint_2d = (global_joint_2d - crop_prom[:, :, :2])   # -1, 21, 2
-
-        b = k_b.repeat(crop_prom[:,:,2],2)
-        b = k_b.reshape(b, [-1,1,2])
-        joint_2d = joint_2d * b
-
-        joint_2d = k_b.reshape(joint_2d, [-1, 21, 1, 2])                # -1, 21, 1, 2
-        joint_2d_ones = joint_2d * self.ones
-
-        diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
-        coeff = 10.0
-        fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / (coeff)
-        son_value = k_b.exp(-fac/2.0)
-        mom_value = (2.0*np.pi) * (coeff)
-
-        result = son_value/mom_value
-        result = k_b.reshape(result, [-1,21,256,256])
-        return result
-
-    def compute_output_shape(self, input_shape):
-        input_a, input_b = input_shape
-        return (input_a[0], 21, self.output_size[0], self.output_size[1])
-
+#
+# class ProjLayer(Layer):
+#     def __init__(self, output_shape, **kwargs):
+#         self.output_size = output_shape
+#
+#         self.ones = k_b.ones((21, self.calc_cell_units(), 2))
+#
+#         self.intrinsics = [[617.173, 0, 0.],
+#                            [0., 617.173, 0],
+#                            [315.453, 242.256, 1]]
+#
+#         self.intrinsics_tensor = k_b.ones((3,3), dtype='float32')
+#         k_b.set_value(self.intrinsics_tensor, self.intrinsics)
+#         self.intrinsics_tensor = k_b.reshape(self.intrinsics_tensor, (1, 3, 3))
+#
+#         pair = []
+#         for i in range(0, self.calc_cell_units()):
+#             pair.append((i%self.output_size[0], i//self.output_size[1]))
+#         pair = np.asarray(pair)
+#         self.back_board = k_b.ones((self.calc_cell_units(), 2))
+#         k_b.set_value(self.back_board, pair)
+#         super(ProjLayer, self).__init__(**kwargs)
+#
+#     def calc_cell_units(self):
+#         return self.output_size[0]*self.output_size[1]
+#
+#     def build(self, input_shape):
+#         super(ProjLayer, self).build(input_shape)
+#
+#     def call(self, x):
+#         joint_3d = x[0]             #   -1, 21, 3
+#         crop_prom = x[1]            #   -1, 1, 3
+#         #
+#
+#         global_joint_2d = k_b.dot(joint_3d, self.intrinsics_tensor)     # -1, 21, 3 X 3, 3 = -1, 21, 1, 3
+#         global_joint_2d = k_b.reshape(global_joint_2d, [-1, 21, 3])     # -1, 21, 3
+#
+#         #
+#         scale = global_joint_2d[:,:,2]                                  # -1, 21
+#         scale = k_b.reshape(scale, [-1,21,1])                           # -1, 21, 1
+#
+#         global_joint_2d = global_joint_2d[:, :, :2] / scale             # -1, 21, 2
+#
+#         joint_2d = (global_joint_2d - crop_prom[:, :, :2])   # -1, 21, 2
+#
+#         b = k_b.repeat(crop_prom[:,:,2],2)
+#         b = k_b.reshape(b, [-1,1,2])
+#         joint_2d = joint_2d * b
+#
+#         joint_2d = k_b.reshape(joint_2d, [-1, 21, 1, 2])                # -1, 21, 1, 2
+#         joint_2d_ones = joint_2d * self.ones
+#
+#         diff = (joint_2d_ones - self.back_board)                        # -1, 21, 65535, 2 - -1, 21, 65535, 2
+#         coeff = 10.0
+#         fac = (k_b.square(diff[:, :, :, 0]) + k_b.square(diff[:, :, :, 1])) / (coeff)
+#         son_value = k_b.exp(-fac/2.0)
+#         mom_value = (2.0*np.pi) * (coeff)
+#
+#         result = son_value/mom_value
+#         result = k_b.reshape(result, [-1,21,256,256])
+#         return result
+#
+#     def compute_output_shape(self, input_shape):
+#         input_a, input_b = input_shape
+#         return (input_a[0], 21, self.output_size[0], self.output_size[1])
+#
 
 
 class RegNet:
@@ -199,19 +197,26 @@ class RegNet:
         image_input_layer = Input(self.input_shape)
         crop_param_input_layer = Input(shape=(1,3))
         res4c = RegNet.__build__resnet__(image_input_layer)
-        intermediate_3D_position = RegNet.make_intermediate_3D_position(res4c)
-        intermediate_3D_rate = Length2Rate(name='intermediate_3D')(intermediate_3D_position)
-        projLayer = ProjLayer((256,256), trainable=False)([intermediate_3D_position, crop_param_input_layer])
+        intermediate_3D_rate = RegNet.make_intermediate_3D_position(res4c)
+        projLayer = ProjLayer()(intermediate_3D_rate)
+        projLayer = RenderingLayer(output_shape=[256,256], coeff=10)(projLayer)
+        # intermediate_3D_rate = Length2Rate(name='intermediate_3D')(intermediate_3D_position)
+        # projLayer = ProjLayer((256,256), trainable=False)([intermediate_3D_position, crop_param_input_layer])
 
         # projLayer_conv = Conv2D(filters=256, kernel_size=3, strides=2, padding='same')(projLayer)
         # projLayer_conv = Conv2D(filters=512, kernel_size=3, strides=2, padding='same')(projLayer_conv)
         # projLayer_conv = Conv2D(filters=1024, kernel_size=3, strides=2, padding='same')(projLayer_conv)
-        max_pool = MaxPool2D()(projLayer)
-        max_pool = MaxPool2D()(max_pool)
-        max_pool = MaxPool2D()(max_pool)
+        conv = Conv2D(kernel_size=3, strides=1, padding='same', filters=32, activation='relu')(projLayer)
+        max_pool = MaxPool2D()(conv)
+        conv = Conv2D(kernel_size=3, strides=1, padding='same', filters=64, activation='relu')(max_pool)
+        max_pool = MaxPool2D()(conv)
+        conv = Conv2D(kernel_size=3, strides=1, padding='same', filters=128, activation='relu')(max_pool)
+        max_pool = MaxPool2D()(conv)
+        # conv = Conv2D(kernel_size=3, strides=1, padding='same', activation='relu')(max_pool)
+        # max_pool = MaxPool2D()(conv)
 
         concat = concatenate([max_pool, res4c], axis=1)
-        conv = RegNet.make_conv(concat)
+        conv = RegNet.make_conv(max_pool)
         joint_3d_result, heat_map = RegNet.make_main_loss(conv)
         return Model(inputs=[image_input_layer, crop_param_input_layer],
                      outputs=[intermediate_3D_rate, joint_3d_result, heat_map])
@@ -244,7 +249,8 @@ class RegNet:
                 test_idx += 1
 
     def test_on_batch(self, test_generator, epoch):
-        root = "D:\\RegNet\\result\\{0}".format(epoch)
+        # root = "D:\\RegNet\\result\\{0}".format(epoch)
+        root = "C:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0
         for image, crop_param, joint_3d, joint_3d_rate, joint_2d in test_generator.getitem():
@@ -295,23 +301,20 @@ class RegNet:
 
     @staticmethod
     def make_main_loss(input_layer):
-        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same')(UpSampling2D()(input_layer))
-        # max_pool = MaxPooling2D()(conv)
-        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same')(UpSampling2D()(conv))
-        # max_pool = MaxPooling2D()(conv)
-        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same')(UpSampling2D()(conv))
-        # max_pool = MaxPooling2D()(conv)
+        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(input_layer))
+        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(conv))
+        conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(conv))
+        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same', activation='sigmoid')(conv)
+
         inner200 = RegNet.inner_product(input_layer, 200)
         inner3joints = RegNet.inner_product(inner200,3*21,flatten=False)
         inner3joints = Reshape((21, 3), name='inner3joints')(inner3joints)
-        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same')(conv)
-        heat_map = Softmax(name='heat_map')(heat_map)
         return inner3joints, heat_map
 
     @staticmethod
     def make_conv(input_layer):
-        conv4e = RegNet.conv_block(5, 1, 512, input_layer)
-        conv4f = RegNet.conv_block(5, 1, 256, conv4e)
+        conv4e = RegNet.conv_block(3, 1, 512, input_layer)
+        conv4f = RegNet.conv_block(3, 1, 256, conv4e)
         return conv4f
 
     @staticmethod
@@ -407,8 +410,8 @@ def gaussian_heat_map(x):
 
 def make_dir_path():
     pathes = []
-    # root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
-    root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
+    root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
+    # root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
     no_object = root_path + "\\data\\noObject"
     for i in range(1,141):
         end = 1025
