@@ -44,7 +44,8 @@ class DataGenerator(Sequence):
         return self.__data_generation(dir_path)
 
     def getitem(self):
-        for i in range(0,len(self.dir_path)):
+        for i in range(0,len(self.dir_path)/self.batch_size):
+            i = i*self.batch_size
             dir_path = [self.dir_path[j] for j in range(i,self.batch_size + i)]
             yield self.__data_generation(dir_path)
         self.on_epoch_end()

@@ -114,7 +114,7 @@ class RegNet:
                                                                                  value2[0,0], value2[0,1], value2[0,2],
                                                                                  abs(value1[0]-value2[0,0])+
                                                                                  abs(value1[1]-value2[0,1])+
-                                                                                 abs(value1[2]-value2[0,2]) )
+                                                                                 abs(value1[2]-value2[0,2]))
                     o3r_file.writelines(val_str)
                 o3r_file.close()
 
@@ -122,12 +122,6 @@ class RegNet:
                 for j in range(1,21):
                     result_image += heatmap[i,:,:,j]
                 plt.imsave(root + "\\joint_{0}_{1}.png".format(idx, i+1), result_image)
-                joint = result[2][0][0]
-            for t in result[2][0]:
-                joint += t
-
-            joint *= 128
-
 
             idx = (idx + 1)
 
