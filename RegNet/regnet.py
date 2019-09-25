@@ -195,7 +195,6 @@ class RegNet:
 
     def __build__(self):
         image_input_layer = Input(self.input_shape)
-        crop_param_input_layer = Input(shape=(1,3))
         res4c = RegNet.__build__resnet__(image_input_layer)
         intermediate_3D_rate = RegNet.make_intermediate_3D_position(res4c)
         projLayer = ProjLayer()(intermediate_3D_rate)
@@ -218,7 +217,7 @@ class RegNet:
         concat = concatenate([max_pool, res4c], axis=1)
         conv = RegNet.make_conv(max_pool)
         joint_3d_result, heat_map = RegNet.make_main_loss(conv)
-        return Model(inputs=[image_input_layer, crop_param_input_layer],
+        return Model(inputs=[image_input_layer],
                      outputs=[intermediate_3D_rate, joint_3d_result, heat_map])
 
     def train_on_batch(self, train_generator, test_generator):
@@ -229,11 +228,9 @@ class RegNet:
         for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_generator.getitem():
             start_time = time.time()
 
-            joint_3d = np.reshape(joint_3d, (-1, 21, 3))
             joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 3))
             joint_2d = np.reshape(joint_2d, (-1, 21, 256, 256))
-            crop_param = np.reshape(crop_param, (-1, 1, 3))
-            result = self.model.train_on_batch(x=[image, crop_param],
+            result = self.model.train_on_batch(x=[image],
                                                y=[joint_3d_rate, joint_3d_rate, joint_2d])
 
             spend_time = time.time() - start_time
@@ -249,27 +246,24 @@ class RegNet:
                 test_idx += 1
 
     def test_on_batch(self, test_generator, epoch):
-        # root = "D:\\RegNet\\result\\{0}".format(epoch)
-        root = "C:\\RegNet\\result\\{0}".format(epoch)
+        root = "D:\\RegNet\\result\\{0}".format(epoch)
+        # root = "C:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0
         for image, crop_param, joint_3d, joint_3d_rate, joint_2d in test_generator.getitem():
-            crop_param = np.reshape(crop_param, (-1, 1, 3))
 
-            result = self.model.predict_on_batch(x=[image, crop_param])
+            result = self.model.predict_on_batch(x=[image])
 
             joint = result[2][0][0]
             for t in result[2][0]:
                 joint += t
 
-            joint *= 255
+            joint *= 128
 
             image = np.moveaxis(image[0], 0, 2)
             print('joint', np.sum(joint), )
             cv2.imwrite(root+"\\joint_{0}.png".format(idx), joint)
-            cv2.imshow("final", joint)
             plt.imsave(root+"\\image_{0}.png".format(idx), image)
-            cv2.waitKey(10)
 
             idx = (idx + 1)
 
@@ -304,7 +298,7 @@ class RegNet:
         conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(input_layer))
         conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(conv))
         conv = Conv2D(kernel_size=3, strides=1, filters=256, padding='same', activation='relu')(UpSampling2D()(conv))
-        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same', activation='sigmoid')(conv)
+        heat_map = Conv2D(kernel_size=3, strides=1, filters=21, padding='same', activation='sigmoid', name='heat_map')(conv)
 
         inner200 = RegNet.inner_product(input_layer, 200)
         inner3joints = RegNet.inner_product(inner200,3*21,flatten=False)
@@ -410,8 +404,8 @@ def gaussian_heat_map(x):
 
 def make_dir_path():
     pathes = []
-    root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
-    # root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
+    # root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
+    root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
     no_object = root_path + "\\data\\noObject"
     for i in range(1,141):
         end = 1025
