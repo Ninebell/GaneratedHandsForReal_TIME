@@ -93,11 +93,12 @@ class ReshapeChannelToLast(Layer):
 
     def call(self,x):
         x = k_b.reshape(x, (-1, 21, 32*32))
-        base = k_b.reshape(x[:,0,:] * self.base , (-1,32,32,1))
+        base = k_b.reshape(x[:,0,:] * self.base, (-1,32,32,1))
         for i in range(1, 21):
             test = (x[:,i,:] * self.base)
             test = k_b.reshape(test, (-1,32,32,1))
             base = k_b.concatenate([base,test])
+        print(base.shape)
         return base
 
     def compute_output_shape(self, input_shape):

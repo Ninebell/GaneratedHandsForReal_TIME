@@ -50,7 +50,7 @@ class DataGenerator(Sequence):
         self.on_epoch_end()
 
     def __data_generation(self, dir_path):
-        image = [np.moveaxis(np.asarray(Image.open(path+"_color_composed.png")), 2, 0) for path in dir_path]
+        image = [np.asarray(Image.open(path+"_color_composed.png")) for path in dir_path]
         image = np.asarray(image, np.float)
         image = image / 255.0
         x = []
@@ -78,7 +78,7 @@ class DataGenerator(Sequence):
             value = np.asarray(value)
             value = np.reshape(value, (21, 2))
             for val in value:
-                heat_map = gaussian_heat_map(val)
+                heat_map = gaussian_heat_map(val/8, 32)
                 joint_2d_heatmap.append(heat_map)
 
         crop_param = np.asarray(crop_param)
@@ -89,7 +89,8 @@ class DataGenerator(Sequence):
 
         joint_3d_rate = np.asarray(joint_3d_rate)
         joint_2d_heatmap = np.asarray(joint_2d_heatmap)
-        joint_2d_heatmap = np.reshape(joint_2d_heatmap, (-1, 21, 256, 256))
+        joint_2d_heatmap = np.reshape(joint_2d_heatmap, (-1, 21, 32, 32))
+        joint_2d_heatmap = np.moveaxis(joint_2d_heatmap, 1, 3)
 
         return image, crop_param, joint_3d, joint_3d_rate, joint_2d_heatmap
 
@@ -386,13 +387,12 @@ def multivariate_gaussian(pos, mu, Sigma):
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
     return np.exp(-fac / 2) / N
 
-def gaussian_heat_map(x):
-    N = 256
-    X = np.linspace(0, 255, N)
-    Y = np.linspace(0, 255, N)
+def gaussian_heat_map(x, N):
+    X = np.linspace(0, N, N)
+    Y = np.linspace(0, N, N)
     X, Y = np.meshgrid(X, Y)
     mu = np.array([x[0], x[1]])
-    Sigma = np.array([[ 10.0 , 0.], [0.,  10.]])
+    Sigma = np.array([[ 3.0 , 0.], [0.,  3.]])
 
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))

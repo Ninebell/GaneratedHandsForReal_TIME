@@ -1,16 +1,19 @@
-from RegNet.regnet import *
+from RegNet.regnet_ import RegNet
+from RegNet.regnet import make_dir_path, DataGenerator
+import numpy as np
+from keras.utils import plot_model
 from keras.optimizers import Adam
+import keras.backend as k_b
 if __name__ == "__main__":
-    k_b.set_image_data_format('channels_first')
     pathes = make_dir_path()
     np.random.shuffle(pathes)
     path_len = len(pathes)
     train_data = pathes[:-200]
     test_data = pathes[-200:]
-    train_gen = DataGenerator(dir_path=train_data, batch_size=2)
+    train_gen = DataGenerator(dir_path=train_data, batch_size=32)
     test_gen = DataGenerator(dir_path=test_data)
 
-    regNet = RegNet(input_shape=(3, 256, 256))
+    regNet = RegNet(input_shape=(256, 256, 3))
     optimizer = Adam(lr=1e-4)
     regNet.model.compile(optimizer=optimizer,
                          loss=['mse',
