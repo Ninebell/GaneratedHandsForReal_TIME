@@ -42,5 +42,3 @@ if __name__ == "__main__":
         # print('t', reshape_image.shape)
         plt.imshow(reshape_image, cmap='hot', interpolation='nearest')
         plt.show()
-
-

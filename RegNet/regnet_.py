@@ -11,6 +11,7 @@ import time
 
 class RegNet:
     def __init__(self, input_shape):
+        self.min_loss = [10000.0,10000.,100000.,100000.,100000.,100000.,100000.]
         input_layer = Input(input_shape)
         resnet = resnet50.ResNet50(input_tensor=input_layer, weights='imagenet', include_top=False)
         conv = RegNet.make_conv(resnet.output)
@@ -32,14 +33,15 @@ class RegNet:
         reshape_joints3D_before_proj = Reshape((21,1,3), name='reshape_joints3D_before_proj')(joints3d_prediction_before_proj)
         temp = Reshape((21,3))(reshape_joints3D_before_proj)
         projLayer = ProjLayer()(temp)
-        print(projLayer.shape)
         heatmaps_pred3D = RenderingLayer([32,32], coeff=1, name='heatmaps_pred3D')(projLayer)
-        heatmaps_pred3D_reshape = ReshapeChannelToLast()(heatmaps_pred3D)
+        print(heatmaps_pred3D.shape)
+        # heatmaps_pred3D_reshape = ReshapeChannelToLast()(heatmaps_pred3D)
 
-        conv_rendered_2 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='relu')(heatmaps_pred3D_reshape)
+        conv_rendered_2 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='relu')(heatmaps_pred3D)
         conv_rendered_3 = Conv2D(filters=128, kernel_size=3, strides=2, padding='same', activation='relu')(conv_rendered_2)
         concat_pred_rendered = concatenate([conv, conv_rendered_3])
         conv_rendered_4 = Conv2D(filters=256, kernel_size=3, strides=1, padding='same', activation='relu')(concat_pred_rendered)
+
         heatmap_prefinal_small = Conv2D(filters=64, kernel_size=3,strides=1,padding='same')(conv_rendered_4)
         heatmap_prefinal = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_prefinal')(heatmap_prefinal_small)
         heatmap_final = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_final')(heatmap_prefinal)
@@ -57,8 +59,10 @@ class RegNet:
     @staticmethod
     def make_conv(input_layer):
         conv4e = RegNet.conv_block(3, 1, 512, input_layer)
-        conv4f = RegNet.conv_block(3, 1, 256, conv4e)
-        return conv4f
+        conv4e_relu = ReLU()(conv4e)
+        conv4f = RegNet.conv_block(3, 1, 256, conv4e_relu)
+        conv4f_relu = ReLU()(conv4f)
+        return conv4f_relu
 
     @staticmethod
     def conv_block(k, s, f, input_layer):
@@ -68,62 +72,79 @@ class RegNet:
         # I need to apply Scale
         return batch
 
-    def train_on_batch(self, train_generator, test_generator):
+    def train_on_batch(self, epoch, train_generator, test_generator):
         steps = train_generator.__len__()
 
         idx = 0
         test_idx = 1
-        for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_generator.getitem():
-            start_time = time.time()
-            joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 1, 3))
-            result = self.model.train_on_batch(x=[image],
-                                               y=[joint_3d_rate, joint_3d_rate, joint_2d])
+        for i in range(0, epoch):
+            for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_generator.getitem():
+                start_time = time.time()
+                joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 1, 3))
+                result = self.model.train_on_batch(x=[image],
+                                                   y=[joint_3d_rate, joint_3d_rate, joint_2d])
 
-            spend_time = time.time() - start_time
-            rest = steps-idx
-            print('{0}/{1}'.format(idx, steps),
-                  result,
-                  "rest: {0:.2f}".format(spend_time * rest))
+                spend_time = time.time() - start_time
+                rest = steps-idx
+                print('{0}/{1}'.format(idx, steps),
+                      result,
+                      "rest: {0:.2f}".format(spend_time * rest))
 
-            idx = (idx + 1) % steps
+                idx = (idx + 1) % steps
 
-            if idx % (steps//100) == 1:
-                self.test_on_batch(test_generator, test_idx)
-                test_idx += 1
+                if idx % (steps//100) == 1:
+                    self.test_on_batch(test_generator, test_idx)
+                    test_idx += 1
 
     def test_on_batch(self, test_generator, epoch):
+        epoch = epoch+45
         root = "D:\\RegNet\\result\\{0}".format(epoch)
-        # root = "C:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0
+        sum_result = [0.0,0.,0.,0.,0.,0.,0.]
         for image, crop_param, joint_3d, joint_3d_rate, joint_2d in test_generator.getitem():
+            joint_3d_rate = np.reshape(joint_3d_rate, (-1, 21, 1, 3))
+            result = self.model.test_on_batch(x=[image],
+                                              y=[joint_3d_rate, joint_3d_rate, joint_2d])
+            result = np.asarray(result)
+            sum_result = np.asarray(sum_result)
+            sum_result += result
+            idx += 1
+        sum_result /= idx
+        if self.min_loss[0] > sum_result[0]:
+            self.min_loss = sum_result
+            print(epoch, self.min_loss)
+            for image, crop_param, joint_3d, joint_3d_rate, joint_2d in test_generator.getitem():
 
-            result = self.model.predict_on_batch(x=[image])
-            joint_3d_rate = np.reshape(joint_3d_rate, (-1,21,3))
-            final_3d_rate = result[1]
-            heatmap = result[2]
-            for i in range(0, test_generator.batch_size):
+                result = self.model.predict_on_batch(x=[image])
+                joint_3d_rate = np.reshape(joint_3d_rate, (-1,21,3))
+                final_3d_rate = result[1]
+                heatmap = result[2]
+                for i in range(0, test_generator.batch_size):
 
-                plt.imsave(root + "\\image_{0}_{1}.png".format(idx, i+1), image[i])
+                    plt.imsave(root + "\\image_{0}_{1}.png".format(idx, i+1), image[i])
 
-                o3r_file = open(root+"\\joint_3d_{0}_{1}.txt".format(idx,i+1), 'w')
-                for k in range(0, 21):
-                    value1 = joint_3d_rate[i][k]
-                    value2 = final_3d_rate[i][k]
-                    val_str = "{0}, {1}, {2} : {3}, {4}, {5} diff: {6}\n".format(value1[0], value1[1], value1[2],
-                                                                                 value2[0,0], value2[0,1], value2[0,2],
-                                                                                 abs(value1[0]-value2[0,0])+
-                                                                                 abs(value1[1]-value2[0,1])+
-                                                                                 abs(value1[2]-value2[0,2]))
-                    o3r_file.writelines(val_str)
-                o3r_file.close()
+                    o3r_file = open(root+"\\joint_3d_{0}_{1}.txt".format(idx,i+1), 'w')
+                    for k in range(0, 21):
+                        value1 = joint_3d_rate[i][k]
+                        value2 = final_3d_rate[i][k]
+                        val_str = "{0}, {1}, {2} : {3}, {4}, {5} diff: {6}\n".format(value1[0], value1[1], value1[2],
+                                                                                     value2[0, 0], value2[0, 1], value2[0, 2],
+                                                                                     abs(value1[0]-value2[0,0]) +
+                                                                                     abs(value1[1]-value2[0,1]) +
+                                                                                     abs(value1[2]-value2[0,2]))
+                        o3r_file.writelines(val_str)
+                    o3r_file.close()
 
-                result_image = heatmap[i,:,:,0]
-                for j in range(1,21):
-                    result_image += heatmap[i,:,:,j]
-                plt.imsave(root + "\\joint_{0}_{1}.png".format(idx, i+1), result_image)
+                    result_image = heatmap[i,:,:,0]
+                    for j in range(1,21):
+                        result_image += heatmap[i,:,:,j]
+                    plt.imsave(root + "\\joint_{0}_{1}.png".format(idx, i+1), result_image)
+                self.model.save(root+"\\regnet.h5".format(epoch))
 
-            idx = (idx + 1)
+                idx = (idx + 1)
+
 
 if __name__ == "__main__":
     RegNet((256, 256, 3))
+
