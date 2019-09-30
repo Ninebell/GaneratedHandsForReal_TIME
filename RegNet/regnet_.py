@@ -45,6 +45,9 @@ class RegNet:
         heatmap_prefinal_small = Conv2D(filters=64, kernel_size=3,strides=1,padding='same')(conv_rendered_4)
         heatmap_prefinal = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_prefinal')(heatmap_prefinal_small)
         heatmap_final = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_final')(heatmap_prefinal)
+        heatmap_final = Reshape((32*32,21))(heatmap_final)
+        heatmap_final = Softmax()(heatmap_final)
+        heatmap_final = Reshape((32,32,21))(heatmap_final)
 
         flat = Flatten()(conv_rendered_4)
         fc_joints3D_1_final = Dense(200, name='fc_joints3D_1_final')(flat)
@@ -54,7 +57,6 @@ class RegNet:
         self.model = Model(inputs=input_layer, output=[reshape_joints3D_before_proj, joints3D_final_vec, heatmap_final])
         # self.model = Model(inputs=input_layer, output=projLayer)
         self.model.summary()
-
 
     @staticmethod
     def make_conv(input_layer):
@@ -76,7 +78,6 @@ class RegNet:
         steps = train_generator.__len__()
 
         idx = 0
-        test_idx = 1
         for i in range(0, epoch):
             for image, crop_param, joint_3d, joint_3d_rate, joint_2d in train_generator.getitem():
                 start_time = time.time()
@@ -92,12 +93,10 @@ class RegNet:
 
                 idx = (idx + 1) % steps
 
-                if idx % (steps//100) == 1:
-                    self.test_on_batch(test_generator, test_idx)
-                    test_idx += 1
+            self.test_on_batch(test_generator, i+1)
 
     def test_on_batch(self, test_generator, epoch):
-        epoch = epoch+45
+        epoch = epoch
         root = "D:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0

@@ -30,5 +30,5 @@ if __name__ == "__main__":
     plot_model(regNet.model, to_file='model.png')
 
     print(regNet.model.metrics_names)
-    regNet.model.load_weights("D:\RegNet\\result\\45\\regnet.h5")
+    # regNet.model.load_weights("D:\RegNet\\result\\\\regnet.h5")
     regNet.train_on_batch(epoch=100, train_generator=train_gen, test_generator=test_gen)
