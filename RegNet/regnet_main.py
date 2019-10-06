@@ -11,12 +11,12 @@ if __name__ == "__main__":
     train_data = pathes[:-200]
     test_data = pathes[-200:]
 
-    train_gen = DataGenerator(dir_path=train_data, batch_size=24)
+    train_gen = DataGenerator(dir_path=train_data, batch_size=28)
     test_gen = DataGenerator(dir_path=test_data, shuffle=False)
     regNet = RegNet(input_shape=(256, 256, 3))
 
-    # optimizer = Adam(lr=1e-4)
-    optimizer = Adadelta(lr=0.1)
+    optimizer = Adam(lr=1e-4)
+    # optimizer = Adadelta(lr=0.1)
     regNet.model.compile(optimizer=optimizer,
                          loss=['mse',
                                'mse',
@@ -29,6 +29,7 @@ if __name__ == "__main__":
     regNet.model.summary()
     plot_model(regNet.model, to_file='model.png')
 
+
     print(regNet.model.metrics_names)
-    # regNet.model.load_weights("D:\RegNet\\result\\\\regnet.h5")
+    regNet.model.load_weights("D:\RegNet\\result\\10\\regnet.h5")
     regNet.train_on_batch(epoch=100, train_generator=train_gen, test_generator=test_gen)

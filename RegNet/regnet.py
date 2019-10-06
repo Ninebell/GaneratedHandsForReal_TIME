@@ -406,7 +406,8 @@ def gaussian_heat_map(x, N):
 def make_dir_path():
     pathes = []
     # root_path = "C:\\Users\\Jonghoe\\Downloads\\GANeratedDataset_v3\\GANeratedHands_Release"
-    root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
+    # root_path = "D:\\GANeratedDataset_v3\\GANeratedHands_Release"
+    root_path = "C:\\Users\\rnwhd\\Desktop\\dat\\GANeratedDataset_v3\\GANeratedHands_Release"
     no_object = root_path + "\\data\\noObject"
     for i in range(1,141):
         end = 1025

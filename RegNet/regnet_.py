@@ -35,9 +35,9 @@ class RegNet:
         projLayer = ProjLayer()(temp)
         heatmaps_pred3D = RenderingLayer([32,32], coeff=1, name='heatmaps_pred3D')(projLayer)
         print(heatmaps_pred3D.shape)
-        # heatmaps_pred3D_reshape = ReshapeChannelToLast()(heatmaps_pred3D)
+        heatmaps_pred3D_reshape = ReshapeChannelToLast()(heatmaps_pred3D)
 
-        conv_rendered_2 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='relu')(heatmaps_pred3D)
+        conv_rendered_2 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='relu')(heatmaps_pred3D_reshape)
         conv_rendered_3 = Conv2D(filters=128, kernel_size=3, strides=2, padding='same', activation='relu')(conv_rendered_2)
         concat_pred_rendered = concatenate([conv, conv_rendered_3])
         conv_rendered_4 = Conv2D(filters=256, kernel_size=3, strides=1, padding='same', activation='relu')(concat_pred_rendered)
@@ -45,9 +45,6 @@ class RegNet:
         heatmap_prefinal_small = Conv2D(filters=64, kernel_size=3,strides=1,padding='same')(conv_rendered_4)
         heatmap_prefinal = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_prefinal')(heatmap_prefinal_small)
         heatmap_final = Deconv2D(filters=21, kernel_size=4, strides=2, padding='same', name='heatmap_final')(heatmap_prefinal)
-        heatmap_final = Reshape((32*32,21))(heatmap_final)
-        heatmap_final = Softmax()(heatmap_final)
-        heatmap_final = Reshape((32,32,21))(heatmap_final)
 
         flat = Flatten()(conv_rendered_4)
         fc_joints3D_1_final = Dense(200, name='fc_joints3D_1_final')(flat)
@@ -87,7 +84,7 @@ class RegNet:
 
                 spend_time = time.time() - start_time
                 rest = steps-idx
-                print('{0}/{1}'.format(idx, steps),
+                print('epoch:{0} iteration{1}/{2}'.format(i, idx, steps),
                       result,
                       "rest: {0:.2f}".format(spend_time * rest))
 
@@ -96,7 +93,8 @@ class RegNet:
             self.test_on_batch(test_generator, i+1)
 
     def test_on_batch(self, test_generator, epoch):
-        epoch = epoch
+        epoch = epoch+10
+
         root = "D:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0

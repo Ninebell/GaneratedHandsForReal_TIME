@@ -78,19 +78,20 @@ class RenderingLayer(Layer):
         # result = son_value
 
         result = k_b.reshape(result, [-1, 21, self.output_size[0] * self.output_size[1]])
-        base = k_b.reshape(result[:, 0, :] * self.base, (-1, 32, 32, 1))
-        print(base.shape)
-        for i in range(1, 21):
-            test = (result[:, i, :] * self.base)
-            test = k_b.reshape(test, (-1, 32, 32, 1))
-            base = k_b.concatenate([base, test])
-        print(base.shape)
-        return base
+        return result
+        # base = k_b.reshape(result[:, 0, :] * self.base, (-1, 32, 32, 1))
+        # print(base.shape)
+        # for i in range(1, 21):
+        #     test = (result[:, i, :] * self.base)
+        #     test = k_b.reshape(test, (-1, 32, 32, 1))
+        #     base = k_b.concatenate([base, test])
+        # print(base.shape)
+        # return base
         # return result
 
     def compute_output_shape(self, input_shape):
         input_a = input_shape
-        return (input_a[0], self.output_size[0], self.output_size[1], 21)
+        return (input_a[0], 21, self.output_size[0], self.output_size[1])
 
 class ReshapeChannelToLast(Layer):
     def __init__(self, **kwargs):
