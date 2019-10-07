@@ -52,6 +52,9 @@ class DataGenerator(Sequence):
 
     def __data_generation(self, dir_path):
         image = [np.asarray(Image.open(path+"_color_composed.png")) for path in dir_path]
+        image = np.asarray(image, np.uint8)
+        print(image[0].shape)
+        cv2.imshow("image", image[0])
         image = np.asarray(image, np.float)
         image = image / 255.0
         x = []
