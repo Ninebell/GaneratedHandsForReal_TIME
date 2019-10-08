@@ -6,7 +6,7 @@ Using monocular RGB camera track 3D hand pose.
 
 It is consist with __GeoConGAN__(offline), __RegNet and fitting function__(online). 
 
-![Alt text](https://github.com/Ninebell/GaneratedHandsForReal_TIME/tree/master/image/whole_model.png)  
+![Alt text](./image/whole_model.PNG)  
 
 
 ## GeoConGAN
@@ -14,7 +14,7 @@ Using GeoConGAN for Data Augmentation. It is based on CycleGAN.
 
 Just using CycleGAN made undesirable result. So using geometrical consistent loss for keep hand shape.  
 
-![Alt text](./image/GeoCycleGan.png)
+![Alt text](./image/GeoCycleGan.PNG)
 
 
 #### No Geometric loss result (To do)
@@ -31,7 +31,7 @@ In my code, I split it to ProjLayer, RenderingLayer. ProjLayer change 3D positio
 
 And RenderingLayer change 2D position to Heat map
 
-![Alt text](./image/regnet_model.png)
+![Alt text](./image/regnet_model.PNG)
 
 ## Getting Started
 
