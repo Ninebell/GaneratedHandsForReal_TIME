@@ -6,7 +6,7 @@ Using monocular RGB camera track 3D hand pose.
 
 It is consist with __GeoConGAN__(offline), __RegNet and fitting function__(online). 
 
-![Alt text](./image/whole model.png)
+![Alt text](https://github.com/Ninebell/GaneratedHandsForReal_TIME/tree/master/image/whole model.png)  
 You can 
 
 
