@@ -1,6 +1,13 @@
 # Ganerated Hands For Real Time in Keras
 
-It referenced from [paper](https://handtracker.mpi-inf.mpg.de/projects/GANeratedHands/).
+original paper site: https://handtracker.mpi-inf.mpg.de/projects/GANeratedHands/
+
+I just re-implemented using keras.
+
+## (To Do)
+- Refactoring the code how to training each model.
+
+---
 
 Using monocular RGB camera track 3D hand pose.
 
