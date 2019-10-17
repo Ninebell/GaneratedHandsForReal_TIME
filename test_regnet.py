@@ -28,24 +28,36 @@ if __name__ == "__main__":
 
         result_image = np.zeros((32,32,3))
         color = [(255,0,0),(255,127,39),(255,255,0),(0,255,0), (0,0,255)]
+        mask_image = np.ones((32,32,3))
+        mask_image = mask_image * 255
+
+        heatmap_sample = np.zeros((32,32))
         for j in range(0, 21):
             index = np.argmax(heatmap[0, :, :, j])
-            row = index//32
+            heatmap_sample |= np.asarray((heatmap[0, :, :, j]*100),np.uint8)
+            row = index/32
             col = index % 32
 
             if j == 0:
+                cv2.circle(mask_image, (col,row), 1, (0,0,0), -1)
                 cv2.circle(result_image, (col,row), 1, color[4], -1)
             else:
+                cv2.circle(mask_image, (col,row), 1, (0,0,0), -1)
                 cv2.circle(result_image, (col,row), 1, color[(j-1)%4], -1)
-
         check_image = np.asarray(check_image, np.uint8)
-        print(np.max(result_image))
+
         result_image = np.asarray(result_image, np.uint8)
         result_image = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)
         check_image = cv2.cvtColor(check_image, cv2.COLOR_BGR2RGB)
-        check_image = cv2.resize(check_image, (32,32))
+
+        mask_image = np.asarray(mask_image, np.uint8)
+        mask_image = cv2.cvtColor(mask_image, cv2.COLOR_BGR2RGB)
+
+        check_image = cv2.resize(check_image, (32,32), interpolation=cv2.INTER_CUBIC)
+        # result_image = cv2.resize(result_image, (256,256), interpolation=cv2.INTER_CUBIC)
         cv2.imshow("heat", result_image)
         cv2.imshow("org", check_image)
-        cv2.imshow("or", result_image|check_image)
+        cv2.imshow("or", (result_image) | check_image)
+        plt.imshow(heatmap_sample)
+        plt.show()
         cv2.waitKey()
-
