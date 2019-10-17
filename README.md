@@ -76,6 +76,9 @@ These instructions will get you a copy of the project up and running on your loc
     ```
     C:\user\local> python test_regnet.py train --i data_path
     ```
+## Data Set
+- SynthData: https://handtracker.mpi-inf.mpg.de/projects/OccludedHands/SynthHands.htm
+- RealData: https://handtracker.mpi-inf.mpg.de/projects/GANeratedHands/GANeratedDataset.htm
 
 ## License
 
