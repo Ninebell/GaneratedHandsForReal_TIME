@@ -2,6 +2,8 @@
 
 original paper site: https://handtracker.mpi-inf.mpg.de/projects/GANeratedHands/
 
+I'm not original member.
+
 I just re-implemented using keras.
 
 ## (To Do)
