@@ -1,3 +1,5 @@
+from keras.layers import *
+from keras.models import Model
 import os
 from glob import glob
 from PIL import Image
@@ -65,5 +67,41 @@ def save_result(save_path,results,flag_multi_class = False,num_class = 2):
         file_path = save_path+'/%d.png' % (idx+1)
         img.save(file_path)
 
+if __name__ == '__main__':
+    in_layer = Input(shape=(None, None, 3))
+    x = Conv2D(16, (3, 3), activation='relu')(in_layer)
+    max_pool = MaxPooling2D()(x)
+    conv = Conv2D(32, (3, 3), activation='relu')(max_pool)
+    max_pool = MaxPooling2D()(conv)
+    conv = Conv2D(10, (1, 1), activation='sigmoid')(conv)
+    avg_pool = GlobalAveragePooling2D()(conv)
+    model = Model(inputs=in_layer, outputs=avg_pool)
+    model.compile(optimizer="adam", loss="mse",
+                  metrics=["accuracy"])
+    model.summary()
+    np28 = []
+    for i in range(100):
+        npo = np.random.rand(28*28*3)
+        npo = npo.reshape((28,28,3))
+        np28.append(npo)
 
+    np56 = []
+    for i in range(100):
+        npo2 = np.random.rand(56*56*3)
+        npo2 = npo2.reshape((56,56,3))
+        np56.append(npo2)
 
+    y = np.random.rand(10)
+    ys = []
+    for i in range(100):
+        ys.append(y)
+
+    np28 = np.asarray(np28)
+    print(np28.shape)
+    ys = np.asarray(ys)
+    np56 = np.asarray(np56)
+
+    print(np56.shape)
+    model.fit(x=np56, y=ys, batch_size=10)
+    print(np28.shape)
+    model.fit(x=np28, y=ys, batch_size=10)
