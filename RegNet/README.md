@@ -26,6 +26,15 @@ In 3D, they can not exactly detect the position. In 2D, the can not know hand's 
     
 ## How to use
 - How to train?
+    ```shell script
+    C:\users\local\RegNet> python regnet_main.py --data YOUR_DATA_PATH
+    ```
+    >Data path must same with GANerated_Dataset. I recommend you to use original Data Set.  
+                                                                                                                     
+    - if you have pretrained model
+    
+    ```shell script
+    C:\users\localRegNet> python regnet_main.py --data YOUR_DATA_PATH --model YOUR_MODEL_PATH
+    ```
+- How to detect?(TO-DO)
 
-- How to detect
-gk
