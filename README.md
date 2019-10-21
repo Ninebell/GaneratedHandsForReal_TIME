@@ -81,7 +81,7 @@ These instructions will get you a copy of the project up and running on your loc
 ## Data Set
 - SynthData: https://handtracker.mpi-inf.mpg.de/projects/OccludedHands/SynthHands.htm
 - RealData: https://handtracker.mpi-inf.mpg.de/projects/GANeratedHands/GANeratedDataset.htm
-
+- Model Weights: https://drive.google.com/drive/folders/1hfH_r1_LjBETMK3r0zbsOyTIkvsyqPbQ
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
