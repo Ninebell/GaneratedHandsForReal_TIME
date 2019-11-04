@@ -46,7 +46,6 @@ class RenderingLayer(Layer):
         super(RenderingLayer, self).build(input_shape)
 
     def call(self, x):
-
         joint_2d = x
         joint_2d = k_b.reshape(joint_2d, [-1, 21, 2])                # -1, 21, 1, 2
 

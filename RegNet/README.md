@@ -36,5 +36,4 @@ In 3D, they can not exactly detect the position. In 2D, the can not know hand's 
     ```shell script
     C:\users\localRegNet> python regnet_main.py --data YOUR_DATA_PATH --model YOUR_MODEL_PATH
     ```
-- How to detect?(TO-DO)
 
