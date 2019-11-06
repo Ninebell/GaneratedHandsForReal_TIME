@@ -3,9 +3,9 @@ import keras.backend as k_b
 import numpy as np
 
 class ProjLayer(Layer):
-    def __init__(self, **kwargs):
+    def __init__(self, heatmap_shape, **kwargs):
         self.range = 1.5
-        self.heatmap_size = 32
+        self.heatmap_size = heatmap_shape
         super(ProjLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -13,7 +13,7 @@ class ProjLayer(Layer):
         super(ProjLayer, self).build(input_shape)
 
     def call(self,x):
-        return (x[:,:,:2] + self.range) / (2*self.range) * (self.heatmap_size-1)
+        return (x[:,:,:2] + self.range) / (2*self.range) * (self.heatmap_size[0]-1)
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[1], 2)
@@ -25,7 +25,7 @@ class RenderingLayer(Layer):
         self.output_size = output_shape
         self.coeff = coeff
 
-        self.base = k_b.ones((1, 32*32), dtype=np.float)
+        self.base = k_b.ones((1, self.calc_cell_units()), dtype=np.float)
         self.ones = k_b.ones((21, 1, 2))
         self.board_ones = k_b.ones((21, self.calc_cell_units(), 2))
 
@@ -68,19 +68,20 @@ class RenderingLayer(Layer):
 
 
 class ReshapeChannelToLast(Layer):
-    def __init__(self, **kwargs):
-        self.base = k_b.ones((1, 32*32), dtype=np.float)
+    def __init__(self, heatmap_shape, **kwargs):
+        self.base = k_b.ones((1, heatmap_shape[0]*heatmap_shape[1]), dtype=np.float)
+        self.heatmap_shape = heatmap_shape
         super(ReshapeChannelToLast, self).__init__(**kwargs)
 
     def build(self, input_shape):
         super(ReshapeChannelToLast, self).build(input_shape)
 
     def call(self,x):
-        x = k_b.reshape(x, (-1, 21, 32*32))
-        base = k_b.reshape(x[:,0,:] * self.base, (-1,32,32,1))
+        x = k_b.reshape(x, (-1, 21, self.heatmap_shape[0]*self.heatmap_shape[1]))
+        base = k_b.reshape(x[:,0,:] * self.base, (-1,self.heatmap_shape[0],self.heatmap_shape[1],1))
         for i in range(1, 21):
             test = (x[:,i,:] * self.base)
-            test = k_b.reshape(test, (-1,32,32,1))
+            test = k_b.reshape(test, (-1, self.heatmap_shape[0],self.heatmap_shape[1],1))
             base = k_b.concatenate([base,test])
         print(base.shape)
         return base

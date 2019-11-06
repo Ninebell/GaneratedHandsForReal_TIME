@@ -28,10 +28,11 @@ def change3D_2D(points, crop_param):
     return points_2d
 
 class DataGenerator(Sequence):
-    def __init__(self, dir_path, batch_size=1, shuffle=True):
+    def __init__(self, dir_path, batch_size=1, shuffle=True, heatmap_shape=[32,32]):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.dir_path = dir_path
+        self.heatmap_shape = heatmap_shape
         self.on_epoch_end()
 
     def __len__(self):
@@ -52,12 +53,8 @@ class DataGenerator(Sequence):
     def __data_generation(self, dir_path):
         image = [np.asarray(Image.open(path+"_color_composed.png")) for path in dir_path]
         image = np.asarray(image, np.uint8)
-        print(image[0].shape)
-        cv2.imshow("image", image[0])
         image = np.asarray(image, np.float)
         image = image / 255.0
-        x = []
-        y = []
         crop_param = []
         joint_3d = []
         joint_2d_heatmap = []
@@ -71,17 +68,17 @@ class DataGenerator(Sequence):
             value = [float(val) for val in value]
             joint_3d.append(value)
 
-
             value = open(path+"_joint_pos.txt").readline().strip('\n').split(',')
             value = [float(val) for val in value]
             joint_3d_rate.append(value)
 
+            print(path+"_joint2d.txt")
             value = open(path+"_joint2D.txt").readline().strip('\n').split(',')
             value = [float(val) for val in value]
             value = np.asarray(value)
             value = np.reshape(value, (21, 2))
             for val in value:
-                heat_map = gaussian_heat_map(val/8, 32)
+                heat_map = gaussian_heat_map(val/8, self.heatmap_shape[0])
                 joint_2d_heatmap.append(heat_map)
 
         crop_param = np.asarray(crop_param)
@@ -92,7 +89,7 @@ class DataGenerator(Sequence):
 
         joint_3d_rate = np.asarray(joint_3d_rate)
         joint_2d_heatmap = np.asarray(joint_2d_heatmap)
-        joint_2d_heatmap = np.reshape(joint_2d_heatmap, (-1, 21, 32, 32))
+        joint_2d_heatmap = np.reshape(joint_2d_heatmap, (-1, 21, self.heatmap_shape[0], self.heatmap_shape[1]))
         joint_2d_heatmap = np.moveaxis(joint_2d_heatmap, 1, 3)
 
         return image, crop_param, joint_3d, joint_3d_rate, joint_2d_heatmap
@@ -104,8 +101,9 @@ class DataGenerator(Sequence):
 
 
 class RegNet:
-    def __init__(self, input_shape):
+    def __init__(self, input_shape, heatmap_shape):
         self.min_loss = [10000.0,10000.,100000.,100000.,100000.,100000.,100000.]
+        self.heatmap_shape=input_shape
         input_layer = Input(input_shape)
         resnet = resnet50.ResNet50(input_tensor=input_layer, weights='imagenet', include_top=False)
         conv = RegNet.make_conv(resnet.output)
@@ -114,10 +112,9 @@ class RegNet:
         joints3d_prediction_before_proj = Dense(63, name='joints3d_prediction_before_proj')(fc_joints3d_1_before_proj)
         reshape_joints3D_before_proj = Reshape((21,1,3), name='reshape_joints3D_before_proj')(joints3d_prediction_before_proj)
         temp = Reshape((21,3))(reshape_joints3D_before_proj)
-        projLayer = ProjLayer()(temp)
-        heatmaps_pred3D = RenderingLayer([32,32], coeff=1, name='heatmaps_pred3D')(projLayer)
-        print(heatmaps_pred3D.shape)
-        heatmaps_pred3D_reshape = ReshapeChannelToLast()(heatmaps_pred3D)
+        projLayer = ProjLayer(heatmap_shape)(temp)
+        heatmaps_pred3D = RenderingLayer(heatmap_shape, coeff=1, name='heatmaps_pred3D')(projLayer)
+        heatmaps_pred3D_reshape = ReshapeChannelToLast(heatmap_shape)(heatmaps_pred3D)
 
         conv_rendered_2 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='relu')(heatmaps_pred3D_reshape)
         conv_rendered_3 = Conv2D(filters=128, kernel_size=3, strides=2, padding='same', activation='relu')(conv_rendered_2)
@@ -175,8 +172,6 @@ class RegNet:
             self.test_on_batch(test_generator, i+1)
 
     def test_on_batch(self, test_generator, epoch):
-        epoch = epoch+10
-
         root = "D:\\RegNet\\result\\{0}".format(epoch)
         os.makedirs(root, exist_ok=True)
         idx = 0
