@@ -72,7 +72,6 @@ class DataGenerator(Sequence):
             value = [float(val) for val in value]
             joint_3d_rate.append(value)
 
-            print(path+"_joint2d.txt")
             value = open(path+"_joint2D.txt").readline().strip('\n').split(',')
             value = [float(val) for val in value]
             value = np.asarray(value)

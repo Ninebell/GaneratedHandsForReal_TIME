@@ -3,6 +3,17 @@ import numpy as np
 import argparse
 from keras.utils import plot_model
 from keras.optimizers import Adam, Adadelta
+import keras.metrics as K_Metrics
+import keras.backend as K
+
+def custom_metrics(y_true, y_pred):
+    diff = y_true - y_pred
+    K_Metrics.mean_absolute_percentage_error()
+
+
+    return K.mean(y_pred)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Argument for training regnet')
     parser.add_argument('--data', type=str, help='data path for training regnet. I recommended you to GANerated Dataset')
@@ -55,7 +66,7 @@ if __name__ == "__main__":
                          loss_weights=[100,
                                        100,
                                        1],
-                         metrics=['mse']
+                         metrics=['mse', custom_metrics]
                          )
     regNet.model.summary()
     plot_model(regNet.model, to_file='model.png')
