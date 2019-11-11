@@ -79,12 +79,11 @@ def imread(path):
 
 class SilNet:
 
-    def __init__(self, shape, train_generator, batch_size):
+    def __init__(self, shape, train_generator=None):
         self.shape = shape
         self.model = self.make_model()
         self.compile_model()
         self.train_generator = train_generator
-        self.batch_size = batch_size
 
     def make_model(self):
         def normalize_layer():

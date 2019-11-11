@@ -111,10 +111,10 @@ class GeoConGAN:
             self.test_save(epoch)
 
     def test_save(self, epoch):
-        epoch = epoch+27
-        os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}".format(epoch,self.tag), exist_ok=True)
-        os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}\\mask".format(epoch,self.tag), exist_ok=True)
-        os.makedirs("D:\\GeoConGAN\\result_{1}\\{0}\\origin".format(epoch,self.tag), exist_ok=True)
+        root_path = ".\\result{0}\\{1}".format(self.tag, epoch)
+        os.makedirs(root_path, exist_ok=True)
+        os.makedirs(root_path+"\\mask", exist_ok=True)
+        os.makedirs(root_path+"\\origin", exist_ok=True)
 
         for i in range(0, 100//self.batch_size):
             (real_image, real_mask, synth_image, synth_mask) = self.generator.get_test_batch(self.batch_size)
@@ -134,7 +134,7 @@ class GeoConGAN:
                 result = np.resize(result, (256,256,3))
                 cv2.imshow("remake", result)
                 cv2.waitKey(10)
-                cv2.imwrite("D:\\GeoConGAN\\result_{1}\\{0}\\mask\\{2}.png".format(epoch, self.tag, i*self.batch_size + j), result)
+                cv2.imwrite(root_path+"\\mask\\{0}.png".format(i*self.batch_size + j), result)
 
             for j, result in enumerate(results_real):
                 result = (result + 1) * 127.5
@@ -142,13 +142,12 @@ class GeoConGAN:
                 result = np.resize(result, (256,256,3))
                 cv2.imshow("remake", result)
                 cv2.waitKey(10)
-                cv2.imwrite("D:\\GeoConGAN\\result_{1}\\{0}\\origin\\{2}.png".format(epoch, self.tag, i*self.batch_size + j), result)
+                cv2.imwrite(root_path+"\\origin\\{0}.png".format(i*self.batch_size + j), result)
 
-
-        self.real2synth.save_weights("D:\\GeoConGAN\\result_{1}\\{0}\\real2synth.h5".format(epoch,self.tag))
-        self.synth2real.save_weights("D:\\GeoConGAN\\result_{1}\\{0}\\synth2real.h5".format(epoch,self.tag))
-        self.real_disc.save_weights("D:\\GeoConGAN\\result_{1}\\{0}\\real_disc.h5".format(epoch,self.tag))
-        self.synth_disc.save_weights("D:\\GeoConGAN\\result_{1}\\{0}\\synth_disc.h5".format(epoch,self.tag))
+        self.real2synth.save_weights(root_path+"\\real2synth.h5")
+        self.synth2real.save_weights(root_path+"\\synth2real.h5")
+        self.real_disc.save_weights(root_path+"\\real_disc.h5")
+        self.synth_disc.save_weights(root_path+"\\synth_disc.h5")
 
     def load_weight(self, path):
         self.real2synth.load_weights(path+"\\real2synth.h5")
