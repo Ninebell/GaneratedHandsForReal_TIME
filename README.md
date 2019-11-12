@@ -7,7 +7,19 @@ I'm not original member.
 I just re-implemented using keras.
 
 ## (To Do)
-- Refactoring the code how to training each model.
+```
+.
+├── Refactoring the code how to training each model.
+│    ├──1. RegNet (Done)
+│    ├──2. GeoConGAN (Done)
+│    └──3. SilNet (Yet)
+│
+├── Metrics
+│    ├──1. PCK (Yet)
+│           ├── 2D PCK (Yet)
+│           ├── 3D PCK (Yet)
+.
+```
 
 ---
 
