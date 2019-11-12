@@ -15,13 +15,18 @@ I just re-implemented using keras.
 │    └──3. SilNet (Yet)
 │
 ├── Metrics
-│    ├──1. PCK (Yet)
+│    └──1. PCK (Yet)
 │           ├── 2D PCK (Yet)
-│           ├── 3D PCK (Yet)
+│           └── 3D PCK (Yet)
 │
 ├── Fitting Function
 │    ├──1. 1€ filter (Yet)
-│    ├──2. Kinematic Skeleton Fitting (Yet)
+│    └──2. Kinematic Skeleton Fitting (Yet)
+│
+├── Result
+│    ├──1. GeoGAN No Geo (Yet)
+│    └──2. GeoGAN Geo (Yet)
+│
 .
 ```
 
