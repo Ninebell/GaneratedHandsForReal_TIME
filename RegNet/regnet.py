@@ -101,7 +101,7 @@ class DataGenerator(Sequence):
 
 class RegNet:
     def __init__(self, input_shape, heatmap_shape):
-        self.min_loss = [10000.0,10000.,100000.,100000.,100000.,100000.,100000.]
+        self.min_loss = [10000.0, 10000., 100000., 100000., 100000., 100000., 100000.]
         self.heatmap_shape=input_shape
         input_layer = Input(input_shape)
         resnet = resnet50.ResNet50(input_tensor=input_layer, weights='imagenet', include_top=False)

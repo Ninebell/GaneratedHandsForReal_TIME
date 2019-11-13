@@ -6,12 +6,31 @@ from keras.optimizers import Adam, Adadelta
 import keras.metrics as K_Metrics
 import keras.backend as K
 
+
+def PCK_3D_Metrics(y_true, y_pred):
+    ones21 = K.ones((21,1), dtype=np.float)
+    threshold_tensor = ones21 * 0.5
+    ones = K.ones((3,1), dtype=np.float)
+
+    diff = K.square(y_true-y_pred)
+    diff = K.dot(diff, ones)            # (-1, 21, 1, 3) x (3, 1) => (-1, 21, 1, 1)
+    diff = K.sqrt(diff)
+    diff = K.reshape(diff, (-1, 21,1))  # (-1, 21, 1, 1) => (-1, 21, 1)
+    diff = K.less(diff, threshold_tensor)      # PCK means less than threshold percentage.
+    diff = K.cast(diff, np.float)       # bool to float
+    diff = K.reshape(diff, (-1, 21))    # (-1, 21)
+    mean_value = K.dot(diff, ones21) / 21.    # (-1, 1)
+    return K.mean(mean_value)
+
+
 def custom_metrics(y_true, y_pred):
-    diff = y_true - y_pred
-    K_Metrics.mean_absolute_percentage_error()
+
+    if y_pred.shape[-1] == 21:
+        return K.mean(y_pred)
+    else:
+        return PCK_3D_Metrics(y_true, y_pred)
 
 
-    return K.mean(y_pred)
 
 
 if __name__ == "__main__":
@@ -68,7 +87,6 @@ if __name__ == "__main__":
                                        1],
                          metrics=['mse', custom_metrics]
                          )
-    regNet.model.summary()
     plot_model(regNet.model, to_file='model.png')
 
     print(regNet.model.metrics_names)
